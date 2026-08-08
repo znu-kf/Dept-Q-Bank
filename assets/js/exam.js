@@ -146,12 +146,21 @@ const ExamEngine = {
       else if (correct) results.correct++;
       else              results.incorrect++;
 
-      if (!correct && answered) {
-        Storage.addIncorrect({
+      if (answered) {
+        const subject    = q._subject         || this.config.subject;
+        const subSubject = q._subSubject      || this.config.subSubject;
+        const uid = `${this.config.module}|${this.config.examType}|${subject}|${subSubject}|${q.id}`;
+
+        // Routes to Supabase (logged-in) or localStorage (guest) via
+        // Auth.getSession(). Fire-and-forget so exam submission and
+        // results rendering never block on a network round-trip;
+        // failures are logged and ProgressManager already falls back
+        // to localStorage internally if the Supabase write errors.
+        ProgressManager.saveQuestionState(uid, correct, {
           module:           this.config.module,
           examType:         this.config.examType,
-          subject:          q._subject         || this.config.subject,
-          subSubject:       q._subSubject      || this.config.subSubject,
+          subject,
+          subSubject,
           subSubjectLabel:  q._subSubjectLabel || this.config.subSubjectLabel,
           id:               q.id,
           question:         q.question,
@@ -159,7 +168,7 @@ const ExamEngine = {
           answer:           q.answer,
           explanation:      q.explanation,
           userAnswer:       userAns,
-        });
+        }).catch(err => console.warn('[ExamEngine] ProgressManager write failed:', err));
       }
     });
 

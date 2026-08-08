@@ -4,14 +4,12 @@
  * ============================================================
  * Loaded as a classic script (no bundler, matches storage.js /
  * exam.js style). Requires the Supabase UMD build to be loaded
- * first — add this to index.html <head>, before this file:
- *
- *   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ * first (see the <script> tag in index.html <head>).
  *
  * The anon key is safe to ship in client code — it is designed
  * to be public. Actual access control is enforced entirely by
- * the Postgres RLS policies and triggers in the SQL above, not
- * by keeping this key secret.
+ * the Postgres RLS policies and triggers, not by keeping this
+ * key secret.
  */
 
 const SUPABASE_URL = 'https://zgtgchdacgedrfrqejcn.supabase.co';

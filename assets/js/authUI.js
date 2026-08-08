@@ -7,21 +7,21 @@
  */
 
 (function () {
-  const modal      = document.getElementById('auth-modal');
-  const triggerBtn = document.getElementById('auth-trigger-btn');
-  const tabs       = document.querySelectorAll('[data-auth-tab]');
-  const loginForm  = document.getElementById('auth-login-form');
-  const signupForm = document.getElementById('auth-signup-form');
-  const loginError = document.getElementById('login-error');
-  const signupError = document.getElementById('signup-error');
-  const signupSuccess = document.getElementById('signup-success');
+  const modal         = document.getElementById('auth-modal');
+  const triggerBtn     = document.getElementById('auth-trigger-btn');
+  const tabs           = document.querySelectorAll('[data-auth-tab]');
+  const loginForm      = document.getElementById('auth-login-form');
+  const signupForm     = document.getElementById('auth-signup-form');
+  const loginError     = document.getElementById('login-error');
+  const signupError    = document.getElementById('signup-error');
+  const signupSuccess  = document.getElementById('signup-success');
 
-  function openModal() { modal.style.display = 'flex'; }
+  function openModal()  { modal.style.display = 'flex'; }
   function closeModal() { modal.style.display = 'none'; }
 
   function setActiveTab(name) {
     tabs.forEach(t => t.classList.toggle('is-active', t.dataset.authTab === name));
-    loginForm.hidden = name !== 'login';
+    loginForm.hidden  = name !== 'login';
     signupForm.hidden = name !== 'signup';
   }
 
@@ -54,9 +54,9 @@
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     loginError.hidden = true;
-    const email = document.getElementById('login-email').value;
+    const email    = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    const result = await Auth.logInUser(email, password);
+    const result   = await Auth.logInUser(email, password);
     if (!result.success) {
       loginError.textContent = result.message;
       loginError.hidden = false;
@@ -70,9 +70,9 @@
     e.preventDefault();
     signupError.hidden = true;
     signupSuccess.hidden = true;
-    const email = document.getElementById('signup-email').value;
+    const email    = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
-    const result = await Auth.signUpUser(email, password);
+    const result   = await Auth.signUpUser(email, password);
     if (!result.success) {
       signupError.textContent = result.message;
       signupError.hidden = false;

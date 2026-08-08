@@ -5,8 +5,16 @@
  * Unified read/write layer. Every call checks for a live
  * Supabase session first; if none exists (guest mode), it falls
  * straight through to the existing `Storage` localStorage layer
- * from storage.js — no data-model duplication, same `uid` keys
- * exam.js already produces (module|examType|subject|subSubject|id).
+ * from storage.js — same `uid` format exam.js already produces:
+ *   module|examType|subject|subSubject|id
+ *
+ * `entry` carries the full question payload (question text,
+ * options, answer, explanation, subSubjectLabel, userAnswer).
+ * Supabase only needs the uid + correctness — question content
+ * already lives in the static JSON files. But the localStorage
+ * "Incorrect Questions" review page (app.js) renders directly
+ * from what's stored, so the guest-mode branch still needs the
+ * full entry to keep that page working exactly as before.
  *
  * Depends on: supabaseClient.js, auth.js, storage.js (loaded first).
  */
@@ -16,11 +24,12 @@ const ProgressManager = {
   /**
    * @param {string} questionUid  e.g. "GIT|final_exam|anatomy|rectum|q12"
    * @param {boolean} isCorrect
-   * @param {{module?: string, examType?: string}} meta  optional, for the
-   *        Supabase row's module/exam_type columns (used for admin analytics
-   *        later; safe to omit).
+   * @param {object} entry  optional. module, examType, subject, subSubject,
+   *        subSubjectLabel, id, question, options, answer, explanation,
+   *        userAnswer — only module/examType are used for the Supabase row;
+   *        the rest are used for the localStorage guest-mode fallback.
    */
-  async saveQuestionState(questionUid, isCorrect, meta = {}) {
+  async saveQuestionState(questionUid, isCorrect, entry = {}) {
     const session = await Auth.getSession();
 
     if (session) {
@@ -30,8 +39,8 @@ const ProgressManager = {
           {
             user_id: session.user.id,
             question_uid: questionUid,
-            module: meta.module ?? null,
-            exam_type: meta.examType ?? null,
+            module: entry.module ?? null,
+            exam_type: entry.examType ?? null,
             is_correct: isCorrect,
             last_attempted_at: new Date().toISOString(),
           },
@@ -40,14 +49,14 @@ const ProgressManager = {
 
       if (error) {
         console.warn('[ProgressManager] Supabase save failed, falling back to localStorage:', error);
-        this._saveLocal(questionUid, isCorrect);
+        this._saveLocal(questionUid, isCorrect, entry);
         return { success: false, backend: 'localStorage-fallback', error };
       }
       return { success: true, backend: 'supabase' };
     }
 
     // Guest mode / no session
-    this._saveLocal(questionUid, isCorrect);
+    this._saveLocal(questionUid, isCorrect, entry);
     return { success: true, backend: 'localStorage' };
   },
 
@@ -79,13 +88,28 @@ const ProgressManager = {
 
   // ─── localStorage branch — reuses the existing incorrect-questions
   //     store from storage.js instead of a third parallel key. ──────
-  _saveLocal(questionUid, isCorrect) {
-    const [module, examType, subject, subSubject, id] = questionUid.split('|');
+  _saveLocal(questionUid, isCorrect, entry = {}) {
     if (isCorrect) {
+      // Answering a previously-missed question correctly "masters" it,
+      // same behavior as the manual "Mark as Mastered" review button.
       Storage.removeIncorrect(questionUid);
-    } else {
-      Storage.addIncorrect({ module, examType, subject, subSubject, id });
+      return;
     }
+
+    const [module, examType, subject, subSubject, id] = questionUid.split('|');
+    Storage.addIncorrect({
+      module:          entry.module          ?? module,
+      examType:        entry.examType        ?? examType,
+      subject:         entry.subject         ?? subject,
+      subSubject:      entry.subSubject      ?? subSubject,
+      subSubjectLabel: entry.subSubjectLabel,
+      id:              entry.id              ?? id,
+      question:        entry.question,
+      options:         entry.options,
+      answer:          entry.answer,
+      explanation:     entry.explanation,
+      userAnswer:      entry.userAnswer,
+    });
   },
 
   _getLocal(questionUid) {

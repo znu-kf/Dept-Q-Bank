@@ -38,12 +38,16 @@ const ExamEngine = {
       endTime: null,
       submitted: false,
     };
-    Storage.clearCurrentExam();
+    // Awaited: init() is already called with `await` from app.js,
+    // and a stale paused exam must not survive into a fresh one.
+    await ProgressManager.clearCurrentExam();
     return this.questions.length;
   },
 
   async resume() {
-    const saved = Storage.loadCurrentExam();
+    // Cloud-first: a paused exam started on another device only
+    // exists in Supabase, never in this device's localStorage.
+    const saved = await ProgressManager.loadCurrentExam();
     if (!saved) return false;
     this.config    = saved.config;
     this.questions = saved.questions;
@@ -53,11 +57,15 @@ const ExamEngine = {
 
   save() {
     if (!this.config || this.state.submitted) return;
-    Storage.saveCurrentExam({
+    // Fire-and-forget: save() runs on every goTo/answer/toggleFlag,
+    // so it must stay non-blocking for the UI. ProgressManager still
+    // writes to localStorage synchronously-in-effect (same tick) and
+    // to Supabase in the background when a session exists.
+    ProgressManager.saveCurrentExam({
       config:    this.config,
       questions: this.questions,
       state:     { ...this.state, flagged: [...this.state.flagged] },
-    });
+    }).catch(err => console.warn('[ExamEngine] saveCurrentExam failed:', err));
   },
 
   goTo(index) {
@@ -89,7 +97,10 @@ const ExamEngine = {
       this.state.flagged.add(index);
     }
     const q = this.questions[index];
-    Storage.toggleFlag({
+    // Fire-and-forget: this.state.flagged (checked below) is already
+    // the immediate source of truth for the UI, so the write doesn't
+    // need to be awaited before returning.
+    ProgressManager.toggleFlag({
       module:      this.config.module,
       examType:    this.config.examType,
       subject:     this.config.subject || q._subject,
@@ -99,7 +110,7 @@ const ExamEngine = {
       options:     q.options,
       answer:      q.answer,
       explanation: q.explanation,
-    });
+    }).catch(err => console.warn('[ExamEngine] toggleFlag failed:', err));
     this.save();
     return this.state.flagged.has(index);
   },
@@ -175,17 +186,20 @@ const ExamEngine = {
     results.score = results.total > 0
       ? Math.round((results.correct / results.total) * 100) : 0;
 
-    Storage.updateStats({
+    // All four calls below are fire-and-forget for the same reason as
+    // the per-question write above: submit() must return `results`
+    // synchronously so the results page can render immediately.
+    ProgressManager.updateStats({
       totalAttempted:    results.total - results.unanswered,
       totalCorrect:      results.correct,
       totalIncorrect:    results.incorrect,
       completedExams:    1,
       totalTimeSpentSec: results.timeSec,
-    });
+    }).catch(err => console.warn('[ExamEngine] updateStats failed:', err));
 
     // Only save per-subsubject progress for single sub-subject exams
     if (!this.config.scope) {
-      Storage.setSubjectProgress(
+      ProgressManager.setSubjectProgress(
         this.config.module,
         this.config.examType,
         this.config.subject,
@@ -198,10 +212,10 @@ const ExamEngine = {
           score:       results.score,
           lastAttempt: results.completedAt,
         }
-      );
+      ).catch(err => console.warn('[ExamEngine] setSubjectProgress failed:', err));
     }
 
-    Storage.addExamResult({
+    ProgressManager.addExamResult({
       module:      this.config.module,
       examType:    this.config.examType,
       subject:     this.config.subject,
@@ -211,9 +225,11 @@ const ExamEngine = {
       correct:     results.correct,
       total:       results.total,
       timeSec:     results.timeSec,
-    });
+    }).catch(err => console.warn('[ExamEngine] addExamResult failed:', err));
 
-    Storage.clearCurrentExam();
+    ProgressManager.clearCurrentExam()
+      .catch(err => console.warn('[ExamEngine] clearCurrentExam failed:', err));
+
     return results;
   },
 

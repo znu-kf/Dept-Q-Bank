@@ -1604,3 +1604,28 @@ img { max-width: 100%; display: block; }
   margin-bottom: .75rem;
 }
 .form-error[hidden], .form-success[hidden] { display: none; }
+
+/* ── Resume banner (paused exam, synced via ProgressManager) ── */
+.resume-banner {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             1rem;
+  flex-wrap:       wrap;
+  padding:         14px 18px;
+  margin-bottom:   1.25rem;
+  background:      var(--primary-bg, var(--surface-2));
+  border:          1px solid var(--primary);
+  border-radius:   var(--radius-md, var(--radius-sm));
+}
+.resume-banner__text {
+  display:       flex;
+  flex-direction: column;
+  gap:           2px;
+}
+.resume-banner__text strong { color: var(--text-1); font-size: .92rem; }
+.resume-banner__text span   { color: var(--text-3); font-size: .8rem; }
+.resume-banner__actions {
+  display: flex;
+  gap:     .5rem;
+}

@@ -38,6 +38,30 @@ const App = {
       }
     });
 
+    // If a session already exists (returning visit with a valid
+    // token), pull stats/flags/subject-progress/incorrect questions
+    // down before the first render so the dashboard shows cloud data
+    // immediately instead of a stale or empty local cache.
+    try {
+      await ProgressManager.hydrateFromCloud();
+    } catch (e) {
+      console.warn('[App] Initial cloud hydration failed, continuing with local cache:', e);
+    }
+
+    // Re-hydrate whenever the user logs in during this session (e.g.
+    // starts as a guest, then signs in) and re-render whatever page
+    // they're on so it reflects the freshly-pulled cloud data.
+    Auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        try {
+          await ProgressManager.hydrateFromCloud();
+        } catch (e) {
+          console.warn('[App] Post-login cloud hydration failed:', e);
+        }
+        this._navigateWithoutHistory(this.currentPage || 'dashboard', this.currentParams || {});
+      }
+    });
+
     const last = Storage.loadLastPage();
     if (last && last.page) {
       this.navigate(last.page, last.params);
@@ -92,8 +116,13 @@ const App = {
         const progress = Storage.getProgress();
         const stats    = Storage.getStats();
         UI.loading('Loading…');
-        const countMap = await this._buildCountMap(this.config);
-        UI.setContent(UI.renderDashboard(this.config, progress, stats, countMap));
+        const countMap    = await this._buildCountMap(this.config);
+        const activeExam  = await ProgressManager.loadCurrentExam();
+        let html = UI.renderDashboard(this.config, progress, stats, countMap);
+        if (activeExam && activeExam.state && !activeExam.state.submitted) {
+          html = this._renderResumeBanner(activeExam) + html;
+        }
+        UI.setContent(html);
         this._applyThemeIcon(document.documentElement.getAttribute('data-theme') || 'light');
         break;
       }
@@ -232,6 +261,18 @@ const App = {
   _handleGlobalClick(e) {
     if (e.target.closest('#theme-toggle')) {
       this._toggleTheme();
+      return;
+    }
+
+    if (e.target.closest('[data-resume-exam]')) {
+      this._resumeExam();
+      return;
+    }
+
+    if (e.target.closest('[data-discard-exam]')) {
+      ProgressManager.clearCurrentExam()
+        .catch(err => console.warn('[App] discard exam failed:', err));
+      this.navigate('dashboard');
       return;
     }
 
@@ -663,6 +704,39 @@ const App = {
           <div class="search-result-item__sub">${r.sub}</div>
         </div>
       </div>`).join('');
+  },
+
+  // ─── Resume paused exam (cross-device via ProgressManager) ───────────────
+
+  _renderResumeBanner(activeExam) {
+    const answered = Object.keys(activeExam.state.answers || {}).length;
+    const total    = activeExam.questions?.length || 0;
+    return `<div class="resume-banner">
+      <div class="resume-banner__text">
+        <strong>Paused exam in progress</strong>
+        <span>${answered}/${total} answered</span>
+      </div>
+      <div class="resume-banner__actions">
+        <button class="btn btn--primary btn--sm" data-resume-exam="1">Continue</button>
+        <button class="btn btn--ghost btn--sm" data-discard-exam="1">Discard</button>
+      </div>
+    </div>`;
+  },
+
+  async _resumeExam() {
+    UI.loading('Resuming exam…');
+    const ok = await ExamEngine.resume();
+    if (!ok) {
+      UI.toast('No paused exam found.', 'info');
+      this.navigate('dashboard');
+      return;
+    }
+    this.currentPage   = 'exam';
+    this.currentParams = {};
+    Storage.saveLastPage({ page: 'exam', params: {} });
+    history.pushState({ page: 'exam', params: {} }, '', '#exam');
+    UI.setContent(UI.renderExam(ExamEngine, this.config));
+    this._bindExamEvents();
   },
 
   // ─── Exam start helper ───────────────────────────────────────────────────

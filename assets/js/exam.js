@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * DEPT. Q. BANK — exam.js  (v4 — streak + confetti flag)
+ * DEPT. Q. BANK — exam.js  (v3 — subject & exam-type wide exams)
  * ============================================================
  */
 
@@ -21,8 +21,10 @@ const ExamEngine = {
     this.config = config;
     let data;
     if (config.scope === 'subject') {
+      // Load all sub-subjects for a given module+examType+subject
       data = await this._loadQuestionsForSubject(config);
     } else if (config.scope === 'examtype') {
+      // Load all subjects+sub-subjects for a given module+examType
       data = await this._loadQuestionsForExamType(config);
     } else {
       data = await this._loadQuestions(config);
@@ -121,9 +123,6 @@ const ExamEngine = {
       perQuestion: [],
     };
 
-    // Track whether any new set reached 100% (for confetti)
-    results.justCompletedSets = [];
-
     this.questions.forEach((q, i) => {
       const userAns = this.state.answers[i];
       const answered = userAns !== undefined;
@@ -143,7 +142,7 @@ const ExamEngine = {
         _subSubjectLabel: q._subSubjectLabel,
       });
 
-      if (!answered)   results.unanswered++;
+      if (!answered)    results.unanswered++;
       else if (correct) results.correct++;
       else              results.incorrect++;
 
@@ -151,9 +150,9 @@ const ExamEngine = {
         Storage.addIncorrect({
           module:           this.config.module,
           examType:         this.config.examType,
-          subject:          q._subject          || this.config.subject,
-          subSubject:       q._subSubject       || this.config.subSubject,
-          subSubjectLabel:  q._subSubjectLabel  || this.config.subSubjectLabel,
+          subject:          q._subject         || this.config.subject,
+          subSubject:       q._subSubject      || this.config.subSubject,
+          subSubjectLabel:  q._subSubjectLabel || this.config.subSubjectLabel,
           id:               q.id,
           question:         q.question,
           options:          q.options,
@@ -168,24 +167,15 @@ const ExamEngine = {
       ? Math.round((results.correct / results.total) * 100) : 0;
 
     Storage.updateStats({
-      totalAttempted:   results.total - results.unanswered,
-      totalCorrect:     results.correct,
-      totalIncorrect:   results.incorrect,
-      completedExams:   1,
+      totalAttempted:    results.total - results.unanswered,
+      totalCorrect:      results.correct,
+      totalIncorrect:    results.incorrect,
+      completedExams:    1,
       totalTimeSpentSec: results.timeSec,
     });
 
-    // Update daily streak
-    Storage.updateStreak();
-
     // Only save per-subsubject progress for single sub-subject exams
     if (!this.config.scope) {
-      const prevProgress = Storage.getSubjectProgress(
-        this.config.module, this.config.examType,
-        this.config.subject, this.config.subSubject
-      );
-      const wasCompleted = prevProgress?.completed;
-
       Storage.setSubjectProgress(
         this.config.module,
         this.config.examType,
@@ -200,33 +190,28 @@ const ExamEngine = {
           lastAttempt: results.completedAt,
         }
       );
-
-      // Signal confetti if this is the first time completing this set
-      if (!wasCompleted) {
-        results.justCompletedSets.push(this.config.subSubject);
-      }
     }
 
     Storage.addExamResult({
-      module:     this.config.module,
-      examType:   this.config.examType,
-      subject:    this.config.subject,
-      subSubject: this.config.subSubject,
-      scope:      this.config.scope,
-      score:      results.score,
-      correct:    results.correct,
-      total:      results.total,
-      timeSec:    results.timeSec,
+      module:      this.config.module,
+      examType:    this.config.examType,
+      subject:     this.config.subject,
+      subSubject:  this.config.subSubject,
+      scope:       this.config.scope,
+      score:       results.score,
+      correct:     results.correct,
+      total:       results.total,
+      timeSec:     results.timeSec,
     });
 
     Storage.clearCurrentExam();
     return results;
   },
 
-  getCurrent()       { return this.questions[this.state.currentIndex] || null; },
-  getCurrentAnswer() { return this.state.answers[this.state.currentIndex]; },
-  isAnswered(index)  { return this.state.answers[index] !== undefined; },
-  isFlagged(index)   { return this.state.flagged.has(index); },
+  getCurrent()      { return this.questions[this.state.currentIndex] || null; },
+  getCurrentAnswer(){ return this.state.answers[this.state.currentIndex]; },
+  isAnswered(index) { return this.state.answers[index] !== undefined; },
+  isFlagged(index)  { return this.state.flagged.has(index); },
 
   getProgress() {
     const answered   = Object.keys(this.state.answers).length;
@@ -235,8 +220,9 @@ const ExamEngine = {
     return { answered, unanswered, flagged, total: this.questions.length };
   },
 
-  // ─── Question loaders ─────────────────────────────────────────────────────
+  // ─── Question loaders ────────────────────────────────────────────────────
 
+  // Load a single sub-subject file
   async _loadQuestions(config) {
     const path = `data/${config.module}/${config.examType}/${config.subject}/${config.subSubject}.json`;
     try {
@@ -251,7 +237,9 @@ const ExamEngine = {
     }
   },
 
+  // Load all sub-subjects for one subject under one exam type
   async _loadQuestionsForSubject(config) {
+    // config.subSubjectList = [{ id, label, icon }, ...]
     const list = config.subSubjectList || [];
     const batches = await Promise.all(
       list.map(ss => this._loadOneSubSubject(config.module, config.examType, config.subject, ss))
@@ -259,7 +247,9 @@ const ExamEngine = {
     return batches.flat();
   },
 
+  // Load all subjects + sub-subjects for one exam type
   async _loadQuestionsForExamType(config) {
+    // config.subjectMap = { subjectId: [{ id, label, icon }, ...], ... }
     const subjectMap = config.subjectMap || {};
     const allBatches = await Promise.all(
       Object.entries(subjectMap).map(([subjectId, ssList]) =>

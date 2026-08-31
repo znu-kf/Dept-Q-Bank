@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * DEPT. Q. BANK — ui.js  (v3 — subject & exam-type wide exams)
+ * DEPT. Q. BANK — ui.js  (v4 — dashboard redesign)
  * ============================================================
  */
 
@@ -92,48 +92,191 @@ const UI = {
     </div>`;
   },
 
+  // ─── Module progress ring (smaller, for cards) ────────────────────────────
+
+  _moduleRing(percent, color) {
+    const r = 26, circ = 2 * Math.PI * r;
+    const offset = circ - (percent / 100) * circ;
+    return `<svg class="mod-ring" viewBox="0 0 60 60" width="60" height="60" aria-hidden="true">
+      <circle cx="30" cy="30" r="${r}" fill="none" stroke="var(--border)" stroke-width="6"/>
+      <circle cx="30" cy="30" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+        stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
+        stroke-linecap="round" transform="rotate(-90 30 30)"
+        style="transition:stroke-dashoffset 1.2s cubic-bezier(.34,1.56,.64,1)"/>
+      <text x="30" y="35" text-anchor="middle" font-size="11" font-weight="700" fill="${color}">${percent}%</text>
+    </svg>`;
+  },
+
+  // ─── Format helpers ───────────────────────────────────────────────────────
+
+  _fmtTime(sec) {
+    if (!sec || sec < 60) return `${sec || 0}s`;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  },
+
+  _fmtStreak(n) {
+    if (n === 0) return '—';
+    return `${n} 🔥`;
+  },
+
+  // ─── Confetti burst ───────────────────────────────────────────────────────
+
+  confetti() {
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const COLORS = ['#1B3A6B','#0f9b82','#f0b429','#c0392b','#2563eb','#7c3aed'];
+    const particles = Array.from({ length: 72 }, () => ({
+      x:    Math.random() * canvas.width,
+      y:    Math.random() * canvas.height * 0.4,
+      vx:   (Math.random() - 0.5) * 6,
+      vy:   (Math.random() - 0.5) * 4 - 3,
+      size: Math.random() * 8 + 4,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      rot:  Math.random() * 360,
+      rv:   (Math.random() - 0.5) * 8,
+      alpha: 1,
+    }));
+    let frame;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.x  += p.vx;
+        p.y  += p.vy;
+        p.vy += 0.18;
+        p.rot += p.rv;
+        p.alpha -= 0.012;
+        if (p.alpha <= 0) return;
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
+      });
+      if (alive) {
+        frame = requestAnimationFrame(draw);
+      } else {
+        canvas.remove();
+      }
+    };
+    frame = requestAnimationFrame(draw);
+    setTimeout(() => { cancelAnimationFrame(frame); canvas.remove(); }, 3500);
+  },
+
   // ─── Dashboard ────────────────────────────────────────────────────────────
 
   renderDashboard(config, progressMap, stats, countMap = null) {
-    const accuracy  = stats.totalAttempted > 0
+    const accuracy = stats.totalAttempted > 0
       ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100) : 0;
     const incorrect = Storage.getIncorrect();
     const flagged   = Storage.getFlagged();
+    const streak    = Storage.getStreak();
 
-    const statsHTML = [
-      { label: 'Attempted',  value: stats.totalAttempted },
-      { label: 'Correct',    value: stats.totalCorrect },
-      { label: 'Incorrect',  value: stats.totalIncorrect },
-      { label: 'Accuracy',   value: `${accuracy}%` },
-      { label: 'Exams',      value: stats.completedExams },
-      { label: 'Flagged',    value: flagged.length },
-      { label: 'For Review', value: incorrect.length },
-    ].map(s => `<div class="stat-pill"><div class="stat-pill__value">${s.value}</div><div class="stat-pill__label">${s.label}</div></div>`).join('');
+    // ── Smart Resume Banner ─────────────────────────────────────────────────
+    const saved = Storage.loadCurrentExam();
+    let resumeBanner = '';
+    if (saved && saved.config && !saved.state?.submitted) {
+      const cfg = saved.config;
+      const answered = Object.keys(saved.state?.answers || {}).length;
+      const total    = (saved.questions || []).length;
+      const modObj   = config.modules.find(m => m.id === cfg.module);
+      const modColor = modObj?.color || 'var(--primary)';
+      const modIcon  = modObj?.icon || '📚';
+      const label    = cfg.subSubjectLabel || cfg.subSubject || cfg.subject || 'Exam';
+      const etObj    = config.examTypes.find(e => e.id === cfg.examType);
+      const etLabel  = etObj?.label || cfg.examType || '';
+      resumeBanner = `
+        <div class="resume-banner" data-nav="exam" data-params='{"resume":true}' style="--mod-color:${modColor}" role="button" tabindex="0" aria-label="Resume exam">
+          <div class="resume-banner__left">
+            <span class="resume-banner__icon">${modIcon}</span>
+            <div class="resume-banner__text">
+              <div class="resume-banner__title">Continue Exam</div>
+              <div class="resume-banner__sub">${modObj?.title || cfg.module} · ${etLabel} · ${label}</div>
+            </div>
+          </div>
+          <div class="resume-banner__right">
+            <span class="resume-banner__progress">Question ${answered + 1} / ${total}</span>
+            <span class="resume-banner__cta">Resume →</span>
+          </div>
+        </div>`;
+    }
 
+    // ── 4 Stat Cards ────────────────────────────────────────────────────────
+    const accColor = accuracy >= 70 ? 'var(--success)' : accuracy >= 50 ? 'var(--warning)' : accuracy > 0 ? 'var(--danger)' : 'var(--text-3)';
+    const statCards = [
+      {
+        icon: '📖',
+        value: stats.totalAttempted.toLocaleString(),
+        label: 'Questions Solved',
+        color: 'var(--primary)',
+      },
+      {
+        icon: '🎯',
+        value: stats.totalAttempted > 0 ? `${accuracy}%` : '—',
+        label: 'Accuracy',
+        color: accColor,
+      },
+      {
+        icon: '🔥',
+        value: streak.current > 0 ? streak.current : '—',
+        label: 'Day Streak',
+        color: streak.current >= 7 ? 'var(--warning)' : streak.current >= 3 ? '#f97316' : 'var(--text-3)',
+      },
+      {
+        icon: '⏱️',
+        value: this._fmtTime(stats.totalTimeSpentSec),
+        label: 'Study Time',
+        color: 'var(--info)',
+      },
+    ].map(s => `
+      <div class="dash-stat-card" style="--accent:${s.color}">
+        <div class="dash-stat-card__icon">${s.icon}</div>
+        <div class="dash-stat-card__value" style="color:${s.color}">${s.value}</div>
+        <div class="dash-stat-card__label">${s.label}</div>
+      </div>`).join('');
+
+    // ── Module Cards ─────────────────────────────────────────────────────────
     const modulesHTML = config.modules.filter(mod => {
       if (!countMap) return true;
       return Object.keys(countMap).some(k => k.startsWith(mod.id + '|') && countMap[k] > 0);
     }).map(mod => {
       const modProgress = this._calcModuleProgress(mod, config, progressMap);
+      const hasProgress = modProgress.setsCompleted > 0;
+      const avgAcc      = this._calcModuleAvgAccuracy(mod, config, progressMap);
+      const ringHTML    = this._moduleRing(modProgress.percent, mod.color);
+      const ctaLabel    = hasProgress ? 'Continue' : 'Start';
+
       return `<div class="module-card" data-nav="module" data-params='${JSON.stringify({ moduleId: mod.id })}' style="--mod-color:${mod.color}" tabindex="0" role="button" aria-label="Open ${mod.title}">
-        <div class="module-card__header">
-          <span class="module-card__icon">${mod.icon}</span>
-          <div class="module-card__meta">
-            <h3 class="module-card__title">${mod.title}</h3>
-            <p class="module-card__subtitle">${mod.fullTitle}</p>
+        <div class="module-card__top">
+          <div class="module-card__left">
+            <span class="module-card__icon">${mod.icon}</span>
+            <div class="module-card__meta">
+              <h3 class="module-card__title">${mod.title}</h3>
+              <p class="module-card__subtitle">${mod.fullTitle}</p>
+            </div>
           </div>
-          <span class="module-card__arrow"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+          <div class="module-card__ring">${ringHTML}</div>
         </div>
-        <div class="module-card__body">
-          <div class="module-card__info">
-            <span>${modProgress.setsCompleted}/${modProgress.totalSets} sets completed</span>
-            <span>${modProgress.percent}%</span>
+        <div class="module-card__bottom">
+          <div class="module-card__stats">
+            <span class="module-card__sets">${modProgress.setsCompleted} / ${modProgress.totalSets} Sets</span>
+            ${avgAcc !== null ? `<span class="module-card__avg" style="color:${avgAcc >= 70 ? 'var(--success)' : avgAcc >= 50 ? 'var(--warning)' : 'var(--danger)'}">Avg ${avgAcc}%</span>` : ''}
           </div>
-          ${this.progressBar(modProgress.percent, mod.color)}
+          <span class="module-card__cta">${ctaLabel} →</span>
         </div>
       </div>`;
     }).join('');
 
+    // ── Review / Flagged buttons ──────────────────────────────────────────────
     const reviewBtn = incorrect.length > 0
       ? `<button class="btn btn--danger review-btn" data-nav="review">
           <svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Review Incorrect
@@ -148,6 +291,7 @@ const UI = {
 
     return `
     <div class="dashboard">
+      ${resumeBanner}
       <div class="dashboard__intro">
         <div>
           <h1 class="dashboard__greeting">Welcome back</h1>
@@ -158,17 +302,37 @@ const UI = {
           ${flaggedBtn}
         </div>
       </div>
-      <div class="stats-strip" style="margin-bottom:28px">${statsHTML}</div>
+      <div class="dash-stats-grid">${statCards}</div>
       <section class="section">
         <h2 class="section__title">Modules</h2>
         <div class="modules-grid">${modulesHTML}</div>
       </section>
       <footer class="dashboard__footer">
         <p>Made by <strong>Kareem Farouk</strong> · Questions by Department Heads</p>
-        <p>Visit the <a href="https://harvest-programme.web.app/index.html" target="_blank" rel="noopener noreferrer" class="harvest-link">Harvest Programme</a> for exam simulation & more</p>
+        <p>Visit the <a href="https://harvest-programme.web.app/index.html" target="_blank" rel="noopener noreferrer" class="harvest-link">Harvest Programme</a> for exam simulation &amp; more</p>
       </footer>
     </div>
     `;
+  },
+
+  // ─── Module avg accuracy helper ───────────────────────────────────────────
+
+  _calcModuleAvgAccuracy(mod, config, progressMap) {
+    const scores = [];
+    (config.examTypes || []).forEach(et => {
+      (config.subjects || []).forEach(sub => {
+        const subs = (mod.subSubjects && mod.subSubjects[et.id] && mod.subSubjects[et.id][sub.id]) || [];
+        subs.forEach(ss => {
+          const key  = `${mod.id}|${et.id}|${sub.id}|${ss.id}`;
+          const prog = progressMap[key];
+          if (prog && prog.completed && prog.total > 0) {
+            scores.push(Math.round((prog.correct / prog.total) * 100));
+          }
+        });
+      });
+    });
+    if (scores.length === 0) return null;
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   },
 
   // ─── Module page ──────────────────────────────────────────────────────────
@@ -205,7 +369,6 @@ const UI = {
 
       if (!subjectsHTML) return '';
 
-      // Total questions for this exam type
       const etTotalQ = countMap
         ? Object.entries(countMap)
             .filter(([k]) => k.startsWith(`${mod.id}|${et.id}|`))
@@ -252,7 +415,7 @@ const UI = {
     </div>`;
   },
 
-  // ─── Subject page — shows sub-subject cards + "Start Subject Exam" ────────
+  // ─── Subject page — shows sub-subjects + "Start Subject Exam" ─────────────
 
   renderSubject(mod, examType, subjectId, subSubjects, progressMap, config, countMap = null) {
     const sub = config.subjects.find(s => s.id === subjectId);
@@ -316,7 +479,7 @@ const UI = {
     </div>`;
   },
 
-  // ─── Sub-subject page — exam start screen ────────────────────────────────
+  // ─── Sub-subject page — exam start screen ─────────────────────────────────
 
   renderSubSubject(mod, examType, subjectId, subSubjectId, questionCount, progress, config) {
     const sub    = config.subjects.find(s => s.id === subjectId);
@@ -386,14 +549,14 @@ const UI = {
     </div>`;
   },
 
-  // ─── NEW: Wide exam start page (subject-level or examtype-level) ──────────
+  // ─── Wide exam start page ─────────────────────────────────────────────────
 
   renderWideExamStart(mod, params, totalCount, config) {
     const et  = config.examTypes.find(e => e.id === params.examType);
     const isSubjectScope = params.scope === 'subject';
     const sub = isSubjectScope ? config.subjects.find(s => s.id === params.subject) : null;
 
-    const icon     = isSubjectScope ? sub.icon : mod.icon; // kept as data identity
+    const icon     = isSubjectScope ? sub.icon : mod.icon;
     const title    = isSubjectScope ? `${sub.label} — Full Exam` : `${et.label} — Full Exam`;
     const subtitle = isSubjectScope
       ? `${mod.title} · ${et.label} · All ${sub.label} Topics`
@@ -407,7 +570,6 @@ const UI = {
 
     const noQ = totalCount === 0;
 
-    // Build topic breakdown
     let breakdownHTML = '';
     if (isSubjectScope) {
       const ssList = (mod.subSubjects?.[params.examType]?.[params.subject]) || [];
@@ -482,7 +644,7 @@ const UI = {
     </div>`;
   },
 
-  // ─── Exam interface ───────────────────────────────────────────────────────
+  // ─── Exam interface ────────────────────────────────────────────────────────
 
   renderExam(engine, config) {
     const q        = engine.getCurrent();
@@ -493,7 +655,6 @@ const UI = {
     const isFlagged = engine.isFlagged(idx);
     const progress  = engine.getProgress();
 
-    // Wide exam vs single sub-subject
     const isWide = !!engine.config.scope;
     let sidebarTitle, sidebarSub;
 
@@ -508,21 +669,20 @@ const UI = {
         sidebarSub   = `${et?.label} · All Subjects`;
       }
     } else {
-      const sub   = config.subjects.find(s => s.id === engine.config.subject);
+      const sub    = config.subjects.find(s => s.id === engine.config.subject);
       const subSubs = (config.modules.find(m => m.id === engine.config.module)?.subSubjects?.[engine.config.examType]?.[engine.config.subject]) || [];
       const ss    = subSubs.find(s => s.id === engine.config.subSubject) || { label: engine.config.subSubject, icon: '📄' };
       sidebarTitle = `${ss.icon} ${ss.label}`;
       sidebarSub   = `${sub?.icon} ${sub?.label} · ${et?.label}`;
     }
 
-    // Show topic badge for wide exams
     const topicBadge = (isWide && q._subSubjectLabel)
       ? `<div class="exam-question-topic">${q._subSubjectLabel}</div>`
       : '';
 
     const paletteHTML = engine.questions.map((_, i) => {
       let cls = 'palette-btn';
-      if (i === idx)                 cls += ' palette-btn--current';
+      if (i === idx)               cls += ' palette-btn--current';
       else if (engine.isAnswered(i)) cls += ' palette-btn--answered';
       if (engine.isFlagged(i))       cls += ' palette-btn--flagged';
       return `<button class="${cls}" data-goto="${i}" title="Question ${i + 1}">${i + 1}</button>`;
@@ -531,7 +691,7 @@ const UI = {
     const optionsHTML = q.options.map((opt, i) => {
       let cls = 'option';
       if (answered !== undefined) {
-        if (i === q.answer)      cls += ' option--correct';
+        if (i === q.answer)   cls += ' option--correct';
         else if (i === answered) cls += ' option--wrong';
       }
       return `<button class="${cls}" data-option="${i}" ${answered !== undefined ? 'disabled' : ''}>
@@ -549,7 +709,6 @@ const UI = {
           <p class="explanation-box__text">${q.explanation}</p>
         </div>` : '';
 
-    // Back nav for wide exams goes to the right place
     const backParams = isWide
       ? (engine.config.scope === 'subject'
           ? { moduleId: engine.config.module, examType: engine.config.examType, subject: engine.config.subject }
@@ -559,7 +718,7 @@ const UI = {
       ? (engine.config.scope === 'subject' ? 'subject' : 'module')
       : 'subject';
 
-    const progressPct = total ? Math.round((progress.answered / total) * 100) : 0;
+    const progressPct   = total ? Math.round((progress.answered / total) * 100) : 0;
     const isLastQuestion = idx === total - 1;
 
     return `
@@ -666,52 +825,60 @@ const UI = {
     const reviewHTML = results.perQuestion.map((pq, i) => {
       const cls    = pq.correct ? 'result-item--correct' : pq.answered ? 'result-item--wrong' : 'result-item--skipped';
       const status = pq.correct ? '✅' : pq.answered ? '❌' : '—';
-      // For wide exams show topic badge
       const topicTag = (isWide && pq._subSubjectLabel)
         ? `<span class="result-item__topic">${pq._subSubjectLabel}</span>` : '';
       return `<div class="result-item ${cls}">
         <div class="result-item__header">
-          <span class="result-item__num">${status} Q${i + 1}</span>
+          <span class="result-item__status">${status}</span>
+          <span class="result-item__num">Q${i + 1}</span>
           ${topicTag}
-          ${pq.flagged ? '<span class="result-item__flag">🚩</span>' : ''}
         </div>
         <p class="result-item__question">${pq.question}</p>
-        <div class="result-item__answers">
-          ${pq.answered ? `<span class="result-item__user ${pq.correct ? 'result-item__user--correct' : 'result-item__user--wrong'}">Your answer: ${['A','B','C','D','E','F','G','H'][pq.userAnswer]}. ${pq.options[pq.userAnswer]}</span>` : '<span class="result-item__skipped">Not answered</span>'}
-          ${!pq.correct ? `<span class="result-item__correct">Correct: ${['A','B','C','D','E','F','G','H'][pq.answer]}. ${pq.options[pq.answer]}</span>` : ''}
+        <div class="result-item__options">
+          ${pq.options.map((opt, oi) => `<span class="review-opt ${oi === pq.answer ? 'review-opt--correct' : oi === pq.userAnswer ? 'review-opt--wrong' : ''}">${['A','B','C','D'][oi]}. ${opt}</span>`).join('')}
         </div>
         <div class="result-item__explanation">${pq.explanation}</div>
       </div>`;
     }).join('');
 
+    const retryIncBtn = results.incorrect > 0
+      ? `<button class="btn btn--danger" id="retry-incorrect-btn"
+          data-module="${results.config.module}" data-exam-type="${results.config.examType}"
+          data-subject="${results.config.subject || ''}" data-sub-subject="${results.config.subSubject || ''}">
+          Retry Incorrect (${results.incorrect})
+        </button>` : '';
+
+    const retryAllBtn = `<button class="btn btn--ghost" id="retry-all-btn"
+      data-module="${results.config.module}" data-exam-type="${results.config.examType}"
+      data-subject="${results.config.subject || ''}" data-sub-subject="${results.config.subSubject || ''}"
+      data-scope="${results.config.scope || ''}">
+      Retry All
+    </button>`;
+
     return `
     <div class="page results-page">
       ${this.backBtn(backNav, backParams)}
       ${this.breadcrumb(crumbs)}
-      <div class="results-summary">
-        <div class="results-summary__ring">${this.scoreRing(results.score)}</div>
-        <div class="results-summary__stats">
-          <h2 class="results-summary__title">Exam Complete</h2>
-          <p class="results-summary__subtitle">${titleLabel} · ${subtitleLabel}</p>
-          <div class="results-summary__grid">
-            ${this.statCard('Correct',   results.correct,    '✅', 'var(--success)')}
-            ${this.statCard('Incorrect', results.incorrect,  '❌', 'var(--danger)')}
-            ${this.statCard('Skipped',   results.unanswered, '—',  '#6b7280')}
-            ${this.statCard('Time',      ExamEngine.formatTime(results.timeSec), '⏱', 'var(--info)')}
+      <div class="results-header">
+        ${this.scoreRing(results.score)}
+        <div class="results-header__info">
+          <h1 class="results-header__title">${titleLabel}</h1>
+          <p class="results-header__sub">${subtitleLabel}</p>
+          <div class="results-stats">
+            <span class="badge badge--success">✅ ${results.correct}</span>
+            <span class="badge badge--danger">❌ ${results.incorrect}</span>
+            ${results.unanswered > 0 ? `<span class="badge badge--ghost">— ${results.unanswered} skipped</span>` : ''}
+            <span class="badge badge--ghost">⏱ ${ExamEngine.formatTime(results.timeSec)}</span>
+          </div>
+          <div class="results-actions">
+            ${retryIncBtn}
+            ${retryAllBtn}
+            <button class="btn btn--primary" data-nav="dashboard">Dashboard</button>
           </div>
         </div>
       </div>
-      <div class="results-actions">
-        <button class="btn btn--ghost" id="retry-all-btn"
-          data-module="${results.config.module}"
-          data-exam-type="${results.config.examType}"
-          data-subject="${results.config.subject || ''}"
-          data-sub-subject="${results.config.subSubject || ''}"
-          data-scope="${results.config.scope || ''}"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Retry Exam</button>
-        <button class="btn btn--ghost" data-nav="dashboard"><svg class="icon icon--sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</button>
-      </div>
       <section class="section">
-        <h2 class="section__title">Question Review</h2>
+        <h2 class="section__title">Review</h2>
         <div class="results-list">${reviewHTML}</div>
       </section>
     </div>`;
@@ -719,136 +886,100 @@ const UI = {
 
   // ─── Review page ──────────────────────────────────────────────────────────
 
-  renderReview(incorrectList, config, filter = null) {
-    const backPage  = filter ? 'subsubject' : 'dashboard';
-    const backParams = filter ? { moduleId: filter.moduleId, examType: filter.examType, subject: filter.subject, subSubject: filter.subSubject } : {};
-    const title     = filter ? `Incorrect — ${filter.label}` : 'Review Incorrect Questions';
-    const crumbs    = filter
-      ? [{ label: 'Dashboard', nav: 'dashboard' }, { label: filter.label, nav: 'subsubject', params: backParams }, { label: 'Incorrect Questions' }]
-      : [{ label: 'Dashboard', nav: 'dashboard' }, { label: 'Review' }];
-
-    if (incorrectList.length === 0) {
-      return `<div class="page">
-        ${this.backBtn(backPage, backParams)}
-        ${this.breadcrumb(crumbs)}
-        ${this.emptyState('Nothing to Review', 'Complete some exams and incorrect answers will appear here.', '🎉')}
-      </div>`;
-    }
-
-    const listHTML = incorrectList.map(q => {
-      const sub = config.subjects.find(s => s.id === q.subject);
-      const et  = config.examTypes.find(e => e.id === q.examType);
-      return `<div class="review-item" data-uid="${q.uid}">
-        <div class="review-item__meta">
-          <span class="badge" style="background:${sub?.color}20;color:${sub?.color}">${sub?.icon} ${sub?.label}</span>
-          <span class="badge badge--ghost">${q.module}</span>
-          ${q.subSubjectLabel ? `<span class="badge badge--ghost">${q.subSubjectLabel}</span>` : ''}
-          <span class="badge badge--ghost">${et?.label}</span>
-        </div>
-        <p class="review-item__question">${q.question}</p>
-        <div class="review-item__options">
-          ${q.options.map((opt, i) => `<span class="review-opt ${i === q.answer ? 'review-opt--correct' : i === q.userAnswer ? 'review-opt--wrong' : ''}">${['A','B','C','D','E','F','G','H'][i]}. ${opt}</span>`).join('')}
-        </div>
-        <div class="review-item__explanation">${q.explanation}</div>
-        <button class="btn btn--ghost btn--sm review-item__remove" data-remove-uid="${q.uid}">Mark as Mastered</button>
-      </div>`;
-    }).join('');
-
-    const filtersHTML = filter ? '' : `
-      <div class="review-filters">
-        <input type="text" id="review-search" class="input" placeholder="Search questions…">
-        <select id="review-filter-module" class="select">
-          <option value="">All Modules</option>
-          ${config.modules.map(m => `<option value="${m.id}">${m.title}</option>`).join('')}
-        </select>
-        <select id="review-filter-subject" class="select">
-          <option value="">All Subjects</option>
-          ${config.subjects.map(s => `<option value="${s.id}">${s.label}</option>`).join('')}
-        </select>
-        <button class="btn btn--danger btn--sm" id="clear-all-review">Clear</button>
-      </div>`;
+  renderReview(incorrect, config, filter = null) {
+    const modulesOpts  = [...new Set(incorrect.map(q => q.module))].map(m => `<option value="${m}">${m}</option>`).join('');
+    const subjectsOpts = config.subjects.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
 
     return `
     <div class="page review-page">
-      ${this.backBtn(backPage, backParams)}
-      ${this.breadcrumb(crumbs)}
-      <header class="page__header" style="--mod-color:var(--danger)">
-        <span class="page__icon"><svg class="icon icon--lg" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></span>
+      ${this.backBtn('dashboard')}
+      ${this.breadcrumb([{ label: 'Dashboard', nav: 'dashboard' }, { label: 'Review' }])}
+      <header class="page__header">
+        <span class="page__icon">🔁</span>
         <div>
-          <h1 class="page__title">${title}</h1>
-          <p class="page__subtitle">${incorrectList.length} questions pending review</p>
+          <h1 class="page__title">Review Bank</h1>
+          <p class="page__subtitle">${incorrect.length} questions for review</p>
         </div>
       </header>
-      ${filtersHTML}
-      <div class="review-list" id="review-list">${listHTML}</div>
+      <div class="review-filters">
+        <input id="review-search" class="input" type="search" placeholder="Search questions…">
+        <select id="review-filter-module" class="input"><option value="">All Modules</option>${modulesOpts}</select>
+        <select id="review-filter-subject" class="input"><option value="">All Subjects</option>${subjectsOpts}</select>
+        ${incorrect.length > 0 ? `<button class="btn btn--danger btn--sm" id="clear-all-review">Clear All</button>` : ''}
+      </div>
+      <div id="review-list">
+        ${incorrect.length === 0
+          ? this.emptyState('Review Bank Empty', 'All correct! No questions to review.', '🎉')
+          : incorrect.map(q => {
+              const sub = config.subjects.find(s => s.id === q.subject);
+              const et  = config.examTypes.find(e => e.id === q.examType);
+              return `<div class="review-item" data-uid="${q.uid}">
+                <div class="review-item__meta">
+                  <span class="badge" style="background:${sub?.color}20;color:${sub?.color}">${sub?.icon} ${sub?.label}</span>
+                  <span class="badge badge--ghost">${q.module}</span>
+                  ${q.subSubjectLabel ? `<span class="badge badge--ghost">${q.subSubjectLabel}</span>` : ''}
+                  <span class="badge badge--ghost">${et?.label}</span>
+                </div>
+                <p class="review-item__question">${q.question}</p>
+                <div class="review-item__options">
+                  ${q.options.map((opt, i) => `<span class="review-opt ${i === q.answer ? 'review-opt--correct' : i === q.userAnswer ? 'review-opt--wrong' : ''}">${['A','B','C','D'][i]}. ${opt}</span>`).join('')}
+                </div>
+                <div class="review-item__explanation">${q.explanation}</div>
+                <button class="btn btn--ghost btn--sm review-item__remove" data-remove-uid="${q.uid}">✓ Mark as Mastered</button>
+              </div>`;
+            }).join('')
+        }
+      </div>
     </div>`;
   },
 
-  // ─── Flagged review page ─────────────────────────────────────────────────
+  // ─── Flagged review page ──────────────────────────────────────────────────
 
-  renderFlagged(flaggedList, config, filter = null) {
-    const backPage   = filter ? 'subsubject' : 'dashboard';
-    const backParams = filter ? { moduleId: filter.moduleId, examType: filter.examType, subject: filter.subject, subSubject: filter.subSubject } : {};
-    const title      = filter ? `Flagged — ${filter.label}` : 'Flagged Questions';
-    const crumbs     = filter
-      ? [{ label: 'Dashboard', nav: 'dashboard' }, { label: filter.label, nav: 'subsubject', params: backParams }, { label: 'Flagged Questions' }]
-      : [{ label: 'Dashboard', nav: 'dashboard' }, { label: 'Flagged Questions' }];
-
-    if (flaggedList.length === 0) {
-      return `<div class="page">
-        ${this.backBtn(backPage, backParams)}
-        ${this.breadcrumb(crumbs)}
-        ${this.emptyState('No Flagged Questions', 'Flag questions during an exam to review them later.', '🚩')}
-      </div>`;
-    }
-
-    const listHTML = flaggedList.map(q => {
-      const sub = config.subjects.find(s => s.id === q.subject);
-      const et  = config.examTypes.find(e => e.id === q.examType);
-      return `<div class="review-item" data-uid="${q.uid}">
-        <div class="review-item__meta">
-          <span class="badge" style="background:${sub?.color}20;color:${sub?.color}">${sub?.icon} ${sub?.label}</span>
-          <span class="badge badge--ghost">${q.module}</span>
-          ${q.subSubjectLabel ? `<span class="badge badge--ghost">${q.subSubjectLabel}</span>` : ''}
-          <span class="badge badge--ghost">${et?.label}</span>
-          <span class="badge" style="background:var(--success-bg);color:var(--success)">🚩 Flagged</span>
-        </div>
-        <p class="review-item__question">${q.question}</p>
-        <div class="review-item__options">
-          ${q.options.map((opt, i) => `<span class="review-opt ${i === q.answer ? 'review-opt--correct' : ''}">${['A','B','C','D','E','F','G','H'][i]}. ${opt}</span>`).join('')}
-        </div>
-        <div class="review-item__explanation">${q.explanation}</div>
-        <button class="btn btn--ghost btn--sm review-item__remove" data-remove-uid="${q.uid}">Remove Flag</button>
-      </div>`;
-    }).join('');
-
-    const flagFiltersHTML = filter ? '' : `
-      <div class="review-filters">
-        <input type="text" id="flagged-search" class="input" placeholder="Search questions…">
-        <select id="flagged-filter-module" class="select">
-          <option value="">All Modules</option>
-          ${config.modules.map(m => `<option value="${m.id}">${m.title}</option>`).join('')}
-        </select>
-        <select id="flagged-filter-subject" class="select">
-          <option value="">All Subjects</option>
-          ${config.subjects.map(s => `<option value="${s.id}">${s.label}</option>`).join('')}
-        </select>
-        <button class="btn btn--danger btn--sm" id="clear-all-flagged">Clear All Flags</button>
-      </div>`;
+  renderFlagged(flagged, config, filter = null) {
+    const modulesOpts  = [...new Set(flagged.map(q => q.module))].map(m => `<option value="${m}">${m}</option>`).join('');
+    const subjectsOpts = config.subjects.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
 
     return `
     <div class="page review-page">
-      ${this.backBtn(backPage, backParams)}
-      ${this.breadcrumb(crumbs)}
-      <header class="page__header" style="--mod-color:var(--success)">
-        <span class="page__icon"><svg class="icon icon--lg" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
+      ${this.backBtn('dashboard')}
+      ${this.breadcrumb([{ label: 'Dashboard', nav: 'dashboard' }, { label: 'Flagged' }])}
+      <header class="page__header">
+        <span class="page__icon">🚩</span>
         <div>
-          <h1 class="page__title">${title}</h1>
-          <p class="page__subtitle">${flaggedList.length} flagged for review</p>
+          <h1 class="page__title">Flagged Questions</h1>
+          <p class="page__subtitle">${flagged.length} flagged</p>
         </div>
       </header>
-      ${flagFiltersHTML}
-      <div class="review-list" id="flagged-list">${listHTML}</div>
+      <div class="review-filters">
+        <input id="flagged-search" class="input" type="search" placeholder="Search questions…">
+        <select id="flagged-filter-module" class="input"><option value="">All Modules</option>${modulesOpts}</select>
+        <select id="flagged-filter-subject" class="input"><option value="">All Subjects</option>${subjectsOpts}</select>
+        ${flagged.length > 0 ? `<button class="btn btn--ghost btn--sm" id="clear-all-flagged" style="border-color:var(--success);color:var(--success)">Remove All Flags</button>` : ''}
+      </div>
+      <div id="flagged-list">
+        ${flagged.length === 0
+          ? this.emptyState('No Flagged Questions', 'Flag questions during exams to review them here.', '🚩')
+          : flagged.map(q => {
+              const sub = config.subjects.find(s => s.id === q.subject);
+              const et  = config.examTypes.find(e => e.id === q.examType);
+              return `<div class="review-item" data-uid="${q.uid}">
+                <div class="review-item__meta">
+                  <span class="badge" style="background:${sub?.color}20;color:${sub?.color}">${sub?.icon} ${sub?.label}</span>
+                  <span class="badge badge--ghost">${q.module}</span>
+                  ${q.subSubjectLabel ? `<span class="badge badge--ghost">${q.subSubjectLabel}</span>` : ''}
+                  <span class="badge badge--ghost">${et?.label}</span>
+                  <span class="badge" style="background:#4A9E8E20;color:#4A9E8E">🚩 Flagged</span>
+                </div>
+                <p class="review-item__question">${q.question}</p>
+                <div class="review-item__options">
+                  ${q.options.map((opt, i) => `<span class="review-opt ${i === q.answer ? 'review-opt--correct' : ''}">${['A','B','C','D'][i]}. ${opt}</span>`).join('')}
+                </div>
+                <div class="review-item__explanation">${q.explanation}</div>
+                <button class="btn btn--ghost btn--sm review-item__remove" data-remove-uid="${q.uid}">🚩 Remove Flag</button>
+              </div>`;
+            }).join('')
+        }
+      </div>
     </div>`;
   },
 
@@ -858,43 +989,38 @@ const UI = {
     return `
     <div class="page search-page">
       ${this.backBtn('dashboard')}
-      ${this.breadcrumb([{ label: 'Dashboard', nav: 'dashboard' }, { label: 'Search' }])}
-      <header class="page__header" style="--mod-color:var(--info)">
-        <span class="page__icon"><svg class="icon icon--lg" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <header class="page__header">
+        <span class="page__icon">🔍</span>
         <div>
           <h1 class="page__title">Search</h1>
-          <p class="page__subtitle">Search across all subjects and modules</p>
+          <p class="page__subtitle">Search across all questions and modules</p>
         </div>
       </header>
-      <div class="search-bar-wrap">
-        <input type="text" id="global-search" class="input input--lg" placeholder="Search questions, subjects, modules…" autofocus>
+      <div class="search-box">
+        <svg class="icon" viewBox="0 0 24 24" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="global-search" class="input search-input" type="search" placeholder="Type to search…" autofocus>
       </div>
-      <div id="search-results" class="search-results">
+      <div id="search-results">
         <p class="search-hint">Start typing to search across all available questions.</p>
       </div>
     </div>`;
   },
 
-  // ─── Internal helpers ─────────────────────────────────────────────────────
+  // ─── Module progress calculator ───────────────────────────────────────────
 
   _calcModuleProgress(mod, config, progressMap) {
-    const subSubjects = mod.subSubjects || {};
-    let completed  = 0;
-    let total      = 0;
-    config.examTypes.forEach(et => {
-      config.subjects.forEach(sub => {
-        const list = (subSubjects[et.id] && subSubjects[et.id][sub.id]) || [];
-        total += list.length;
-        list.forEach(ss => {
+    let totalSets = 0, setsCompleted = 0;
+    (config.examTypes || []).forEach(et => {
+      (config.subjects || []).forEach(sub => {
+        const subs = (mod.subSubjects && mod.subSubjects[et.id] && mod.subSubjects[et.id][sub.id]) || [];
+        subs.forEach(ss => {
+          totalSets++;
           const key = `${mod.id}|${et.id}|${sub.id}|${ss.id}`;
-          if (progressMap[key]?.completed) completed++;
+          if (progressMap[key]?.completed) setsCompleted++;
         });
       });
     });
-    return {
-      setsCompleted: completed,
-      totalSets:     total,
-      percent:       total > 0 ? Math.round((completed / total) * 100) : 0,
-    };
+    const percent = totalSets > 0 ? Math.round((setsCompleted / totalSets) * 100) : 0;
+    return { totalSets, setsCompleted, percent };
   },
 };

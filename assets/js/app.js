@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * DEPT. Q. BANK — app.js  (v3 — subject & exam-type wide exams)
+ * DEPT. Q. BANK — app.js  (v4 — confetti trigger)
  * ============================================================
  */
 
@@ -11,7 +11,7 @@ const App = {
   currentParams: {},
   lastResults: null,
 
-  // ─── Bootstrap ───────────────────────────────────────────────────────────
+  // ─── Bootstrap ────────────────────────────────────────────────────────────
 
   async init() {
     UI.loading('Loading Dept. Q. Bank…');
@@ -46,7 +46,7 @@ const App = {
     }
   },
 
-  // ─── Theme toggle ────────────────────────────────────────────────────────
+  // ─── Theme toggle ──────────────────────────────────────────────────────────
 
   _initTheme() {
     const saved = localStorage.getItem('dqb_theme') || 'light';
@@ -68,7 +68,7 @@ const App = {
     this._applyThemeIcon(next);
   },
 
-  // ─── Navigation ──────────────────────────────────────────────────────────
+  // ─── Navigation ───────────────────────────────────────────────────────────
 
   navigate(page, params = {}) {
     this.currentPage   = page;
@@ -143,7 +143,7 @@ const App = {
         const mod = this._getModule(params.moduleId);
         if (!mod) { this.navigate('dashboard'); break; }
         UI.loading('Loading…');
-        const countMap  = await this._buildCountMap(this.config, mod);
+        const countMap   = await this._buildCountMap(this.config, mod);
         const totalCount = await this._getWideQuestionCount(mod, params.examType, params.subject, params.scope, countMap);
         UI.setContent(UI.renderWideExamStart(mod, params, totalCount, this.config));
         this._bindWideExamStartEvents(mod, params);
@@ -152,6 +152,14 @@ const App = {
 
       case 'exam': {
         UI.loading('Preparing exam…');
+        // Handle resume
+        if (params.resume) {
+          const resumed = await ExamEngine.resume();
+          if (!resumed) { this.navigate('dashboard'); break; }
+          UI.setContent(UI.renderExam(ExamEngine, this.config));
+          this._bindExamEvents();
+          break;
+        }
         const started = await this._startExam(params);
         if (!started) {
           // Go back to appropriate page
@@ -227,7 +235,7 @@ const App = {
     }
   },
 
-  // ─── Global click delegation ─────────────────────────────────────────────
+  // ─── Global click delegation ───────────────────────────────────────────────
 
   _handleGlobalClick(e) {
     if (e.target.closest('#theme-toggle')) {
@@ -258,6 +266,7 @@ const App = {
       this.navigate('dashboard');
       return;
     }
+
     const el = e.target.closest('[data-nav]');
     if (!el) return;
     e.preventDefault();
@@ -267,7 +276,7 @@ const App = {
     this.navigate(page, params);
   },
 
-  // ─── Subject page events (adds "Start Subject Exam" button) ──────────────
+  // ─── Subject page events (adds "Start Subject Exam" button) ───────────────
 
   _bindSubjectPageEvents(mod, examType, subject, subSubjects, countMap) {
     const btn = document.getElementById('start-subject-exam-btn');
@@ -281,10 +290,10 @@ const App = {
           return;
         }
         this.navigate('wide-exam-start', {
-          moduleId:  mod.id,
+          moduleId: mod.id,
           examType,
           subject,
-          scope:     'subject',
+          scope:    'subject',
         });
       });
     }
@@ -323,7 +332,7 @@ const App = {
     }
   },
 
-  // ─── Wide exam start page events ─────────────────────────────────────────
+  // ─── Wide exam start page events ──────────────────────────────────────────
 
   _bindWideExamStartEvents(mod, params) {
     const startBtn = document.getElementById('start-wide-exam-btn');
@@ -356,7 +365,7 @@ const App = {
           const opts = document.querySelectorAll('.option');
           opts.forEach((btn, i) => {
             btn.disabled = true;
-            if (i === result.correctIndex)         btn.classList.add('option--correct');
+            if (i === result.correctIndex)        btn.classList.add('option--correct');
             else if (i === idx && !result.correct) btn.classList.add('option--wrong');
           });
           this._updatePalette();
@@ -369,7 +378,7 @@ const App = {
               // Show topic label for wide exams
               const q = ExamEngine.getCurrent();
               const topicBadge = (ExamEngine.config.scope && q._subSubjectLabel)
-                ? `<div class="explanation-box__topic">📌 ${q._subSubjectLabel}</div>`
+                ? `<div class="explanation-box__topic">${q._subSubjectLabel}</div>`
                 : '';
 
               box.innerHTML = `
@@ -434,8 +443,8 @@ const App = {
       if (!btn) return;
       btn.className = 'palette-btn';
       if (i === ExamEngine.state.currentIndex) btn.classList.add('palette-btn--current');
-      else if (ExamEngine.isAnswered(i))       btn.classList.add('palette-btn--answered');
-      if (ExamEngine.isFlagged(i))             btn.classList.add('palette-btn--flagged');
+      else if (ExamEngine.isAnswered(i))        btn.classList.add('palette-btn--answered');
+      if (ExamEngine.isFlagged(i))              btn.classList.add('palette-btn--flagged');
     });
     const info = document.querySelector('.exam-progress-info');
     if (info) {
@@ -452,6 +461,8 @@ const App = {
   _submitExam() {
     if (this._cleanupExamListeners) this._cleanupExamListeners();
     this.lastResults = ExamEngine.submit();
+    // Trigger confetti when a set is completed for the first time 🎉
+    if (this.lastResults?.justCompletedSets?.length) UI.confetti();
     this.navigate('results');
   },
 
@@ -549,7 +560,7 @@ const App = {
     });
   },
 
-  // ─── Flagged review events ───────────────────────────────────────────────
+  // ─── Flagged review events ────────────────────────────────────────────────
 
   _bindFlaggedReviewEvents() {
     const list    = document.getElementById('flagged-list');
@@ -665,14 +676,14 @@ const App = {
       </div>`).join('');
   },
 
-  // ─── Exam start helper ───────────────────────────────────────────────────
+  // ─── Exam start helper ────────────────────────────────────────────────────
 
   async _startExam(params) {
     if (params.retryIncorrectOnly) {
       const all = Storage.getIncorrect().filter(
-        q => q.module === params.moduleId &&
-             q.examType === params.examType &&
-             q.subject === params.subject &&
+        q => q.module     === params.moduleId &&
+             q.examType   === params.examType &&
+             q.subject    === params.subject  &&
              q.subSubject === params.subSubject
       );
       if (all.length === 0) {
@@ -680,21 +691,21 @@ const App = {
         return false;
       }
       ExamEngine.config = {
-        module:            params.moduleId,
-        examType:          params.examType,
-        subject:           params.subject,
-        subSubject:        params.subSubject,
+        module:           params.moduleId,
+        examType:         params.examType,
+        subject:          params.subject,
+        subSubject:       params.subSubject,
         immediateFeedback: true,
-        randomize:         params.randomize ?? false,
+        randomize:        params.randomize ?? false,
       };
       ExamEngine.questions = params.randomize ? ExamEngine._shuffle([...all]) : all;
       ExamEngine.state = {
         currentIndex: 0,
-        answers: {},
-        flagged: new Set(),
-        startTime: Date.now(),
-        endTime: null,
-        submitted: false,
+        answers:      {},
+        flagged:      new Set(),
+        startTime:    Date.now(),
+        endTime:      null,
+        submitted:    false,
       };
       return true;
     }
@@ -708,13 +719,13 @@ const App = {
       if (params.scope === 'subject') {
         const subSubjectList = (mod.subSubjects?.[params.examType]?.[params.subject]) || [];
         examConfig = {
-          module:            params.moduleId,
-          examType:          params.examType,
-          subject:           params.subject,
-          scope:             'subject',
+          module:           params.moduleId,
+          examType:         params.examType,
+          subject:          params.subject,
+          scope:            'subject',
           subSubjectList,
           immediateFeedback: true,
-          randomize:         true,
+          randomize:        true,
         };
       } else {
         // examtype scope — collect all subjects and their sub-subjects
@@ -724,12 +735,12 @@ const App = {
           if (ssList.length > 0) subjectMap[sub.id] = ssList;
         });
         examConfig = {
-          module:            params.moduleId,
-          examType:          params.examType,
-          scope:             'examtype',
+          module:           params.moduleId,
+          examType:         params.examType,
+          scope:            'examtype',
           subjectMap,
           immediateFeedback: true,
-          randomize:         true,
+          randomize:        true,
         };
       }
 
@@ -743,12 +754,12 @@ const App = {
 
     // Standard single sub-subject exam
     const count = await ExamEngine.init({
-      module:            params.moduleId,
-      examType:          params.examType,
-      subject:           params.subject,
-      subSubject:        params.subSubject,
+      module:           params.moduleId,
+      examType:         params.examType,
+      subject:          params.subject,
+      subSubject:       params.subSubject,
       immediateFeedback: true,
-      randomize:         params.randomize ?? false,
+      randomize:        params.randomize ?? false,
     });
 
     if (count === 0) {

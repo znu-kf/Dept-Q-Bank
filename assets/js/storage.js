@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * DEPT. Q. BANK — storage.js  (v2 — sub-subject support)
+ * DEPT. Q. BANK — storage.js  (v3 — streak & study time)
  * ============================================================
  */
 
@@ -13,6 +13,7 @@ const STORAGE_KEYS = {
   CURRENT_EXAM:   'dqb_current_exam',
   LAST_PAGE:      'dqb_last_page',
   SETTINGS:       'dqb_settings',
+  STREAK:         'dqb_streak',
 };
 
 const Storage = {
@@ -53,7 +54,24 @@ const Storage = {
     return stats;
   },
 
-  // ─── Progress — now keyed by module|examType|subject|subSubject ───────────
+  // ─── Streak ───────────────────────────────────────────────────────────────
+
+  getStreak() {
+    return this._get(STORAGE_KEYS.STREAK) || { current: 0, lastStudyDate: null };
+  },
+
+  updateStreak() {
+    const streak = this.getStreak();
+    const today  = new Date().toDateString();
+    if (streak.lastStudyDate === today) return streak;       // Already studied today
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    streak.current  = (streak.lastStudyDate === yesterday) ? streak.current + 1 : 1;
+    streak.lastStudyDate = today;
+    this._set(STORAGE_KEYS.STREAK, streak);
+    return streak;
+  },
+
+  // ─── Progress — keyed by module|examType|subject|subSubject ──────────────
 
   getProgress() {
     return this._get(STORAGE_KEYS.PROGRESS) || {};
@@ -123,7 +141,7 @@ const Storage = {
     this._set(STORAGE_KEYS.EXAM_HISTORY, history);
   },
 
-  // ─── Current exam ────────────────────────────────────────────────────────
+  // ─── Current exam ─────────────────────────────────────────────────────────
 
   saveCurrentExam(state)  { this._set(STORAGE_KEYS.CURRENT_EXAM, state); },
   loadCurrentExam()       { return this._get(STORAGE_KEYS.CURRENT_EXAM); },
@@ -145,7 +163,6 @@ const Storage = {
     Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
   },
 
-  // Wipe all history but keep flagged questions
   wipeHistory() {
     const flagged = this.getFlagged();
     Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));

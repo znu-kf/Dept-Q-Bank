@@ -1,7 +1,7 @@
-# 🏥 Dept. Q. Bank
+# Dept. Q. Bank
 
-> A professional, offline-first medical question bank for GitHub Pages.
-> Built with pure HTML, CSS, and JavaScript — no build step, no backend, no dependencies.
+A professional, offline-first medical question bank for GitHub Pages.
+Built with plain HTML, CSS, and JavaScript — no build step, no backend, no dependencies.
 
 ---
 
@@ -21,12 +21,13 @@
 - [LocalStorage Data](#localstorage-data)
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
+- [Licence](#licence)
 
 ---
 
 ## Overview
 
-**Dept. Q. Bank** is a complete, self-hosted medical question bank platform designed for students to practise multiple-choice questions across five medical modules:
+Dept. Q. Bank is a self-hosted medical question bank platform for practising multiple-choice questions across five medical modules:
 
 | Module | Full Title |
 |--------|-----------|
@@ -36,33 +37,35 @@
 | ENDO & REPRO | Endocrinology & Reproductive |
 | Urinary | Urinary System |
 
-Each module contains two exam types (**End Module Exam** and **Final Exam**), each with four subjects (**Anatomy, Physiology, Biochemistry, Histology**).
+Each module contains two exam types (End Module Exam and Final Exam), each with four subjects (Anatomy, Physiology, Biochemistry, Histology).
 
-All question content lives in plain JSON files. Adding or updating questions requires **only editing JSON files** — no coding knowledge needed.
+All question content lives in plain JSON files. Adding or updating questions requires only editing JSON files — no coding knowledge needed.
 
 ---
 
 ## Features
 
-- ✅ Professional medical Q-bank interface (UWorld / AMBOSS style)
-- ✅ Full exam engine with immediate feedback or end-of-exam review mode
-- ✅ Question palette showing answered / unanswered / flagged status
-- ✅ Flag questions for later review
-- ✅ Incorrect questions automatically saved to a review bank
-- ✅ Dashboard analytics (accuracy, completed exams, flagged questions)
-- ✅ Per-module and per-subject progress tracking
-- ✅ Results page with full question review and explanations
-- ✅ Retry incorrect questions only
-- ✅ Search functionality
-- ✅ Mobile-first responsive design
-- ✅ Fully offline after first load (no backend)
-- ✅ All progress saved in browser LocalStorage
+- Professional medical Q-bank interface, in the style of UWorld or AMBOSS
+- Full exam engine with immediate feedback or end-of-exam review mode
+- Question palette showing answered, unanswered, and flagged status
+- Flag questions for later review
+- Incorrect questions automatically saved to a review bank
+- Dashboard analytics: questions solved, accuracy, and total study time
+- Per-module progress rings with completion count and average score
+- Resume banner for continuing an in-progress exam from the dashboard
+- Results page with full question review and explanations
+- Retry incorrect questions only
+- Search functionality
+- Light and dark themes
+- Mobile-first responsive design
+- Fully offline after first load, with no backend
+- All progress saved in browser LocalStorage
 
 ---
 
 ## Live Demo
 
-After deploying to GitHub Pages your URL will be:
+After deploying to GitHub Pages, your URL will be:
 
 ```
 https://<your-username>.github.io/<repository-name>/
@@ -79,7 +82,7 @@ https://<your-username>.github.io/<repository-name>/
 git clone https://github.com/<your-username>/<your-repo>.git
 cd <your-repo>
 
-# 2. Serve locally (required — file:// protocol blocks fetch() calls)
+# 2. Serve locally (required — the file:// protocol blocks fetch() calls)
 # Python 3:
 python -m http.server 8000
 
@@ -89,7 +92,7 @@ npx serve .
 # Then open: http://localhost:8000
 ```
 
-> ⚠️ **Do not** open `index.html` directly from your file system (`file://`). Browsers block `fetch()` on `file://` URLs. Always use a local server.
+Note: do not open `index.html` directly from the file system (`file://`). Browsers block `fetch()` on `file://` URLs. Always use a local server.
 
 ### Option 2 — Deploy to GitHub Pages (recommended)
 
@@ -99,20 +102,20 @@ See [Deployment to GitHub Pages](#deployment-to-github-pages).
 
 ## Deployment to GitHub Pages
 
-1. **Fork or push** this repository to your GitHub account.
+1. Fork or push this repository to your GitHub account.
 
-2. Go to your repository on GitHub → **Settings** → **Pages**.
+2. Go to your repository on GitHub, then Settings, then Pages.
 
-3. Under **Source**, select **Deploy from a branch**.
+3. Under Source, select Deploy from a branch.
 
-4. Select the **main** branch and **/ (root)** folder. Click **Save**.
+4. Select the main branch and the / (root) folder, then click Save.
 
 5. After a minute, your site will be live at:
    ```
    https://<your-username>.github.io/<repository-name>/
    ```
 
-6. To update questions, simply **edit JSON files** and push. GitHub Pages will deploy the changes automatically.
+6. To update questions, edit the JSON files and push. GitHub Pages will deploy the changes automatically.
 
 ---
 
@@ -120,20 +123,20 @@ See [Deployment to GitHub Pages](#deployment-to-github-pages).
 
 ```
 /
-├── index.html              ← Single-page app entry point
+├── index.html              Single-page app entry point
 ├── README.md
 │
 ├── assets/
 │   ├── css/
-│   │   └── styles.css      ← All styles (edit colours, fonts here)
+│   │   └── styles.css      All styles (edit colours, fonts here)
 │   └── js/
-│       ├── app.js          ← Main application controller & navigation
-│       ├── storage.js      ← LocalStorage persistence layer
-│       ├── exam.js         ← Exam engine (loading, scoring, state)
-│       └── ui.js           ← UI rendering functions
+│       ├── app.js          Main application controller and navigation
+│       ├── storage.js      LocalStorage persistence layer
+│       ├── exam.js         Exam engine (loading, scoring, state)
+│       └── ui.js           UI rendering functions
 │
 ├── config/
-│   └── modules.json        ← Site configuration, modules, subjects
+│   └── modules.json        Site configuration, modules, subjects
 │
 └── data/
     ├── CPM/
@@ -144,10 +147,10 @@ See [Deployment to GitHub Pages](#deployment-to-github-pages).
     │   │   └── histology.json
     │   └── final_exam/
     │       └── (same four files)
-    ├── GIT/   (same structure)
-    ├── CNS/   (same structure)
-    ├── ENDO_REPRO/   (same structure)
-    └── URINARY/      (same structure)
+    ├── GIT/            (same structure)
+    ├── CNS/            (same structure)
+    ├── ENDO_REPRO/     (same structure)
+    └── URINARY/        (same structure)
 ```
 
 ---
@@ -219,11 +222,11 @@ Simply add multiple objects to the array, separated by commas:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | integer | ✅ | Unique identifier within this file |
-| `question` | string | ✅ | The question text |
-| `options` | string[] | ✅ | Exactly 4 answer options (A, B, C, D) |
-| `answer` | integer | ✅ | Index of the correct option: `0`=A, `1`=B, `2`=C, `3`=D |
-| `explanation` | string | ✅ | Detailed explanation shown after answering |
+| `id` | integer | Yes | Unique identifier within this file |
+| `question` | string | Yes | The question text |
+| `options` | string[] | Yes | Exactly 4 answer options (A, B, C, D) |
+| `answer` | integer | Yes | Index of the correct option: `0`=A, `1`=B, `2`=C, `3`=D |
+| `explanation` | string | Yes | Detailed explanation shown after answering |
 
 ---
 
@@ -256,10 +259,12 @@ Simply add multiple objects to the array, separated by commas:
   "shortTitle": "MSK",
   "description": "Musculoskeletal anatomy and pathology questions",
   "color": "#7c3aed",
-  "icon": "🦴",
+  "icon": "bone",
   "dataPath": "MSK"
 }
 ```
+
+Note: the `icon` field is rendered verbatim in the interface. The placeholder above is for readability in this document; substitute an actual glyph (for example an emoji character) to match the existing modules.
 
 ---
 
@@ -269,8 +274,9 @@ Simply add multiple objects to the array, separated by commas:
 
 2. Add a new object to the `"subjects"` array:
    ```json
-   { "id": "pathology", "label": "Pathology", "icon": "🧫", "color": "#be185d" }
+   { "id": "pathology", "label": "Pathology", "icon": "microscope", "color": "#be185d" }
    ```
+   (as above, use an actual glyph for `icon` to match the existing subjects)
 
 3. For every module and exam type, create the matching JSON file:
    ```
@@ -308,7 +314,7 @@ Edit the CSS variables at the top of `assets/css/styles.css`:
 
 ### Change fonts
 
-Replace the `@import` line at the top of `styles.css` and update `--font-display` and `--font-body`.
+Replace the `@import` line at the top of `styles.css` and update the `--font-body` and `--font-mono` variables to your chosen font family names.
 
 ### Enable immediate feedback by default
 
@@ -368,11 +374,17 @@ Storage.resetAll(); location.reload();
 
 ## Roadmap
 
-Future features planned:
+Recently added:
+
+- Redesigned dashboard stats (questions solved, accuracy, study time)
+- Per-module progress rings with average score
+- Resume banner for continuing an in-progress exam
+- Light and dark themes
+
+Planned:
 
 - [ ] Timed exam mode
 - [ ] Question difficulty tags
-- [ ] Dark mode
 - [ ] Notes on individual questions
 - [ ] PDF export of results
 - [ ] Offline PWA support

@@ -51,6 +51,184 @@ const UI = {
     </div>`);
   },
 
+  // ─── Skeleton loaders ───────────────────────────────────────────────────
+
+  _skel(w, h, radius = '5px', extra = '') {
+    return `<span class="skeleton" style="display:block;width:${w};height:${h};border-radius:${radius};${extra}"></span>`;
+  },
+
+  skeletonDashboard() {
+    const pill = `<div class="stat-pill">
+        ${this._skel('44%', '22px', '5px')}
+        <div style="margin-top:8px">${this._skel('70%', '9px', '4px')}</div>
+      </div>`;
+
+    const moduleCard = `<div class="module-card" style="cursor:default">
+        <div class="module-card__header">
+          ${this._skel('40px', '40px', 'var(--radius)')}
+          <div class="module-card__meta">
+            ${this._skel('90px', '15px', '4px')}
+            <div style="margin-top:7px">${this._skel('65%', '10px', '4px')}</div>
+          </div>
+          ${this._skel('14px', '14px', '3px')}
+        </div>
+        <div class="module-card__body">
+          ${this._skel('100%', '6px', '999px')}
+          <div style="display:flex;justify-content:space-between;margin-top:8px">
+            ${this._skel('60px', '10px', '4px')}${this._skel('70px', '10px', '4px')}
+          </div>
+        </div>
+      </div>`;
+
+    return `
+    <div class="dashboard">
+      <div class="dashboard__intro">
+        <div>
+          ${this._skel('170px', '28px', '6px')}
+          <div style="margin-top:9px">${this._skel('230px', '13px', '4px')}</div>
+        </div>
+        <div class="dashboard__quickactions">
+          ${this._skel('38px', '38px', 'var(--radius)')}
+          ${this._skel('38px', '38px', 'var(--radius)')}
+        </div>
+      </div>
+      <div class="stats-strip" style="margin-bottom:28px">${pill}${pill}${pill}</div>
+      <div style="margin-bottom:14px">${this._skel('76px', '11px', '4px')}</div>
+      <div class="modules-grid">${moduleCard}${moduleCard}</div>
+    </div>`;
+  },
+
+  skeletonPageHeader() {
+    return `<div class="page__header">
+      ${this._skel('46px', '46px', 'var(--radius)')}
+      <div>
+        ${this._skel('160px', '18px', '4px')}
+        <div style="margin-top:8px">${this._skel('220px', '11px', '4px')}</div>
+      </div>
+    </div>`;
+  },
+
+  // Module page — exam-type sections with rows of subject cards
+  skeletonModule() {
+    const row = `<div class="subject-card" style="cursor:default">
+        <div class="subject-card__left">
+          ${this._skel('32px', '32px', 'var(--radius-sm)')}
+          <div>
+            ${this._skel('120px', '13px', '4px')}
+            <div style="margin-top:6px">${this._skel('80px', '10px', '4px')}</div>
+          </div>
+        </div>
+        ${this._skel('16px', '16px', '3px')}
+      </div>`;
+
+    const section = `<div class="exam-type-section">
+        <div class="exam-type-header">
+          <div class="exam-type-header__top">
+            <div>
+              ${this._skel('130px', '13px', '4px')}
+              <div style="margin-top:6px">${this._skel('180px', '10px', '4px')}</div>
+            </div>
+          </div>
+        </div>
+        <div class="subjects-list">${row}${row}${row}</div>
+      </div>`;
+
+    return `<div class="page skeleton-page">
+      ${this.skeletonPageHeader()}
+      ${section}${section}
+    </div>`;
+  },
+
+  // Subject page — grid of sub-subject topic cards
+  skeletonSubject() {
+    const card = `<div class="subsubject-card" style="cursor:default">
+        ${this._skel('38px', '38px', 'var(--radius)')}
+        ${this._skel('70%', '11px', '4px')}
+        ${this._skel('40%', '9px', '4px')}
+      </div>`;
+
+    return `<div class="page skeleton-page">
+      ${this.skeletonPageHeader()}
+      <div class="subsubjects-grid">${card}${card}${card}${card}${card}${card}</div>
+    </div>`;
+  },
+
+  // Sub-subject page — stat pills + action panel
+  skeletonSubSubject() {
+    const pill = `<div class="stat-pill">
+        ${this._skel('36px', '20px', '5px')}
+        <div style="margin-top:8px">${this._skel('80%', '9px', '4px')}</div>
+      </div>`;
+
+    return `<div class="page skeleton-page">
+      ${this.skeletonPageHeader()}
+      <div class="stats-strip" style="margin-bottom:18px">${pill}${pill}${pill}</div>
+      <div class="topic-panel">
+        <div class="topic-panel__primary">
+          ${this._skel('150px', '44px', 'var(--radius)')}
+          ${this._skel('110px', '44px', 'var(--radius)')}
+        </div>
+        <div class="topic-panel__divider"></div>
+        <div class="topic-panel__secondary">
+          ${this._skel('90px', '11px', '4px')}
+          <div style="display:flex;gap:8px">
+            ${this._skel('96px', '34px', 'var(--radius)')}${this._skel('84px', '34px', 'var(--radius)')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // Exam page — sidebar palette + question card
+  skeletonExam() {
+    const paletteCell = this._skel('30px', '30px', 'var(--radius-sm)');
+    return `<div class="exam-layout">
+      <aside class="exam-sidebar">
+        <div class="exam-sidebar__header">
+          ${this._skel('70%', '14px', '4px')}
+          <div style="margin-top:6px">${this._skel('50%', '10px', '4px')}</div>
+        </div>
+        ${this._skel('100%', '6px', '999px', 'margin:14px 0')}
+        <div class="palette">${Array(12).fill(paletteCell).join('')}</div>
+      </aside>
+      <div class="exam-main">
+        <div class="question-card">
+          ${this._skel('90%', '15px', '4px')}
+          <div style="margin-top:8px">${this._skel('75%', '15px', '4px')}</div>
+          <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px">
+            ${this._skel('100%', '46px', 'var(--radius)')}
+            ${this._skel('100%', '46px', 'var(--radius)')}
+            ${this._skel('100%', '46px', 'var(--radius)')}
+            ${this._skel('100%', '46px', 'var(--radius)')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // Wide exam start page — info-card grid + exam-options-card (legacy layout)
+  skeletonWideExamStart() {
+    const infoCard = `<div class="info-card">
+        <div style="display:flex;justify-content:center;margin-bottom:6px">${this._skel('60%', '9px', '4px')}</div>
+        <div style="display:flex;justify-content:center">${this._skel('40%', '20px', '5px')}</div>
+      </div>`;
+
+    return `<div class="page skeleton-page">
+      ${this.skeletonPageHeader()}
+      <div class="subject-info-cards">${infoCard}${infoCard}${infoCard}</div>
+      <div class="exam-options-card">
+        <div class="exam-actions">
+          ${this._skel('180px', '44px', 'var(--radius)')}
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // Generic app-shell skeleton, shown once on first boot before config loads
+  skeletonAppBoot() {
+    return this.skeletonDashboard();
+  },
+
   emptyState(title, body, icon = '📭') {
     return `<div class="empty-state">
       <div class="empty-state__icon">${icon}</div>
@@ -97,22 +275,6 @@ const UI = {
       <div class="score-ring__label">
         <span class="score-ring__value" style="color:${color}">${percent}%</span>
       </div>
-    </div>`;
-  },
-
-  miniProgressRing(percent, color = 'var(--primary)') {
-    const p = Math.min(100, Math.max(0, percent));
-    const r = 16, circ = 2 * Math.PI * r;
-    const offset = circ - (p / 100) * circ;
-    return `<div class="module-card__ring-wrap">
-      <svg class="module-card__ring" viewBox="0 0 40 40" width="40" height="40">
-        <circle cx="20" cy="20" r="${r}" fill="none" stroke="var(--border)" stroke-width="3.5"/>
-        <circle cx="20" cy="20" r="${r}" fill="none" stroke="${color}" stroke-width="3.5"
-          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
-          stroke-linecap="round" transform="rotate(-90 20 20)"
-          style="transition:stroke-dashoffset .8s ease"/>
-      </svg>
-      <span class="module-card__ring-value">${p}%</span>
     </div>`;
   },
 
@@ -242,12 +404,16 @@ const UI = {
           <span class="module-card__arrow"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
         <div class="module-card__body">
-          ${this.miniProgressRing(modProgress.percent, mod.color)}
-          <div class="module-card__stats-text">
-            <div class="module-card__sets">${modProgress.setsCompleted} / ${modProgress.totalSets} Sets</div>
-            <div class="module-card__avg">${modProgress.avgScore}% Average</div>
+          <div class="module-card__progress-track">
+            <div class="module-card__progress-fill" style="width:${modProgress.percent}%;background:${mod.color}"></div>
           </div>
-          <span class="module-card__cta" style="color:${mod.color}">${modProgress.setsCompleted > 0 ? 'Continue' : 'Start'} <span aria-hidden="true">→</span></span>
+          <div class="module-card__progress-meta">
+            <span>${modProgress.setsCompleted} / ${modProgress.totalSets} Sets</span>
+            <span>${modProgress.avgScore}% Average</span>
+          </div>
+        </div>
+        <div class="module-card__footer">
+          <span class="module-card__cta">${modProgress.setsCompleted > 0 ? 'Continue' : 'Start'} <span aria-hidden="true">→</span></span>
         </div>
       </div>`;
     }).join('');
@@ -265,15 +431,13 @@ const UI = {
     return `
     <div class="dashboard">
       <div class="dashboard__intro">
-        <div class="dashboard__intro-left">
-          <div class="dashboard__quickactions">
-            ${reviewBtn}
-            ${flaggedBtn}
-          </div>
-          <div>
-            <h1 class="dashboard__greeting">Welcome back</h1>
-            <p class="dashboard__subgreeting">ZNU medical students, the A⁺ is waiting...</p>
-          </div>
+        <div>
+          <h1 class="dashboard__greeting">Welcome back</h1>
+          <p class="dashboard__subgreeting">ZNU medical students, the A⁺ is waiting...</p>
+        </div>
+        <div class="dashboard__quickactions">
+          ${reviewBtn}
+          ${flaggedBtn}
         </div>
       </div>
       ${resumeBannerHTML}
@@ -443,7 +607,21 @@ const UI = {
     const subSubs = (mod.subSubjects && mod.subSubjects[examType] && mod.subSubjects[examType][subjectId]) || [];
     const ss     = subSubs.find(s => s.id === subSubjectId) || { label: subSubjectId, icon: '📄' };
     const pct    = progress && progress.total ? Math.round((progress.correct / progress.total) * 100) : 0;
+    const pctColor = pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
     const noQ    = questionCount === 0;
+
+    const statPills = [
+      { label: 'Questions Available', value: questionCount },
+      ...(progress ? [
+        { label: 'Last Score',   value: `${pct}%`, color: pctColor },
+        { label: 'Last Attempt', value: new Date(progress.lastAttempt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) },
+      ] : []),
+    ].map(s => `<div class="stat-pill"><div class="stat-pill__value"${s.color ? ` style="color:${s.color}"` : ''}>${s.value}</div><div class="stat-pill__label">${s.label}</div></div>`).join('');
+
+    const retryBtn = progress
+      ? `<button class="btn btn--ghost btn--lg" id="retry-exam-btn">
+          <svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Retry
+        </button>` : '';
 
     return `
     <div class="page subsubject-page">
@@ -469,36 +647,31 @@ const UI = {
             `Add questions to <code>data/${mod.dataPath}/${examType}/${subjectId}/${subSubjectId}.json</code> in your repo.`,
             ss.icon
           )
-        : `<div class="subject-info-cards">
-            <div class="info-card">
-              <div class="info-card__label">Questions Available</div>
-              <div class="info-card__value">${questionCount}</div>
-            </div>
-            ${progress ? `
-            <div class="info-card">
-              <div class="info-card__label">Last Score</div>
-              <div class="info-card__value" style="color:${pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)'}">${pct}%</div>
-            </div>
-            <div class="info-card">
-              <div class="info-card__label">Last Attempt</div>
-              <div class="info-card__value info-card__value--sm">${new Date(progress.lastAttempt).toLocaleDateString()}</div>
-            </div>` : ''}
-          </div>
-          <div class="exam-options-card">
-            <div class="exam-actions">
-              <button class="btn btn--primary btn--lg" id="start-exam-btn">Start Exam <svg class="icon icon--sm" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
-              ${progress ? `<button class="btn btn--ghost" id="retry-exam-btn"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Retry</button>` : ''}
-            </div>
-            <div class="exam-actions" style="margin-top:.5rem">
-              <button class="btn btn--danger btn--sm" data-nav="scoped-review"
-                data-params='${JSON.stringify({ moduleId: mod.id, examType, subject: subjectId, subSubject: subSubjectId, label: ss.label })}'>
-                Incorrect (this topic)
+        : `<div class="stats-strip" style="margin-bottom:18px">${statPills}</div>
+          <div class="topic-panel">
+            <div class="topic-panel__primary">
+              <button class="btn btn--primary btn--lg" id="start-exam-btn">
+                Start Exam <svg class="icon icon--sm" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </button>
-              <button class="btn btn--ghost btn--sm" data-nav="scoped-flagged"
-                data-params='${JSON.stringify({ moduleId: mod.id, examType, subject: subjectId, subSubject: subSubjectId, label: ss.label })}'
-                style="border-color:var(--success);color:var(--success)">
-                Flagged (this topic)
-              </button>
+              ${retryBtn}
+            </div>
+            <div class="topic-panel__divider"></div>
+            <div class="topic-panel__secondary">
+              <span class="topic-panel__secondary-label">Review This Topic</span>
+              <div class="topic-panel__secondary-actions">
+                <button class="topic-action-btn topic-action-btn--danger" data-nav="scoped-review"
+                  data-params='${JSON.stringify({ moduleId: mod.id, examType, subject: subjectId, subSubject: subSubjectId, label: ss.label })}'
+                  title="Incorrect answers in this topic">
+                  <svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                  <span>Incorrect</span>
+                </button>
+                <button class="topic-action-btn topic-action-btn--success" data-nav="scoped-flagged"
+                  data-params='${JSON.stringify({ moduleId: mod.id, examType, subject: subjectId, subSubject: subSubjectId, label: ss.label })}'
+                  title="Flagged questions in this topic">
+                  <svg class="icon icon--sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                  <span>Flagged</span>
+                </button>
+              </div>
             </div>
           </div>`
       }

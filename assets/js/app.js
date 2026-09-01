@@ -14,7 +14,7 @@ const App = {
   // ─── Bootstrap ───────────────────────────────────────────────────────────
 
   async init() {
-    UI.loading('Loading Dept. Q. Bank…');
+    UI.setContent(UI.skeletonAppBoot());
     try {
       this.config = await this._loadConfig();
       document.title = this.config.siteTitle;
@@ -91,7 +91,7 @@ const App = {
       case 'dashboard': {
         const progress = Storage.getProgress();
         const stats    = Storage.getStats();
-        UI.loading('Loading…');
+        UI.setContent(UI.skeletonDashboard());
         const countMap  = await this._buildCountMap(this.config);
         const savedExam = Storage.loadCurrentExam();
         const resumeBannerHTML = (savedExam && !savedExam.state?.submitted)
@@ -105,7 +105,7 @@ const App = {
         const mod = this._getModule(params.moduleId);
         if (!mod) { this.navigate('dashboard'); break; }
         const progress = Storage.getProgress();
-        UI.loading('Loading…');
+        UI.setContent(UI.skeletonModule());
         const countMap = await this._buildCountMap(this.config, mod);
         UI.setContent(UI.renderModule(mod, this.config, progress, countMap));
         break;
@@ -119,7 +119,7 @@ const App = {
         if (!mod) { this.navigate('dashboard'); break; }
         const subSubjects = (mod.subSubjects && mod.subSubjects[et] && mod.subSubjects[et][subject]) || [];
         const progress    = Storage.getProgress();
-        UI.loading('Loading…');
+        UI.setContent(UI.skeletonSubject());
         const countMap = await this._buildCountMap(this.config, mod);
         UI.setContent(UI.renderSubject(mod, et, subject, subSubjects, progress, this.config, countMap));
         this._bindSubjectPageEvents(mod, et, subject, subSubjects, countMap);
@@ -133,7 +133,7 @@ const App = {
         const et         = params.examType;
         const subSubject = params.subSubject;
         if (!mod) { this.navigate('dashboard'); break; }
-        UI.loading('Loading…');
+        UI.setContent(UI.skeletonSubSubject());
         const count    = await this._getQuestionCount(mod, et, subject, subSubject);
         const progress = Storage.getSubjectProgress(mod.id, et, subject, subSubject);
         UI.setContent(UI.renderSubSubject(mod, et, subject, subSubject, count, progress, this.config));
@@ -145,7 +145,7 @@ const App = {
       case 'wide-exam-start': {
         const mod = this._getModule(params.moduleId);
         if (!mod) { this.navigate('dashboard'); break; }
-        UI.loading('Loading…');
+        UI.setContent(UI.skeletonWideExamStart());
         const countMap  = await this._buildCountMap(this.config, mod);
         const totalCount = await this._getWideQuestionCount(mod, params.examType, params.subject, params.scope, countMap);
         UI.setContent(UI.renderWideExamStart(mod, params, totalCount, this.config));
@@ -154,7 +154,7 @@ const App = {
       }
 
       case 'exam': {
-        UI.loading('Preparing exam…');
+        UI.setContent(UI.skeletonExam());
         const started = await this._startExam(params);
         if (!started) {
           // Go back to appropriate page
@@ -173,7 +173,7 @@ const App = {
       }
 
       case 'resume-exam': {
-        UI.loading('Resuming exam…');
+        UI.setContent(UI.skeletonExam());
         const resumed = await ExamEngine.resume();
         if (!resumed) { this.navigate('dashboard'); break; }
         UI.setContent(UI.renderExam(ExamEngine, this.config));
@@ -656,7 +656,13 @@ const App = {
       container.innerHTML = '<p class="search-hint">Start typing to search across all available questions.</p>';
       return;
     }
-    container.innerHTML = '<div class="loading-screen"><div class="spinner"></div></div>';
+    container.innerHTML = Array(4).fill(`<div class="search-result-item" style="cursor:default">
+      ${UI._skel('34px', '34px', 'var(--radius-sm)')}
+      <div style="flex:1">
+        ${UI._skel('55%', '12px', '4px')}
+        <div style="margin-top:6px">${UI._skel('35%', '9px', '4px')}</div>
+      </div>
+    </div>`).join('');
     const q = query.toLowerCase().trim();
     const found = [];
 

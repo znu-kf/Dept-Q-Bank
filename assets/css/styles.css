@@ -636,6 +636,66 @@ img { max-width: 100%; display: block; }
   gap:         6px;
 }
 
+/* ── Quick-action icon stack (injected) ──────────────────────── */
+.dashboard__intro-left {
+  display:     flex;
+  align-items: center;
+  gap:         14px;
+}
+.dashboard__quickactions {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+  flex-shrink:    0;
+}
+.quick-icon-btn {
+  position:        relative;
+  width:           38px;
+  height:          38px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--surface);
+  backdrop-filter: var(--glass-blur-sm);
+  border:          1px solid var(--border);
+  border-radius:   var(--radius);
+  color:           var(--text-3);
+  cursor:          pointer;
+  transition:      background var(--dur), border-color var(--dur), color var(--dur), transform var(--dur);
+}
+.quick-icon-btn .icon { width: 17px; height: 17px; }
+.quick-icon-btn:hover  { transform: translateY(-1px); }
+.quick-icon-btn:active { transform: translateY(0); }
+.quick-icon-btn--danger:hover {
+  background:   var(--danger-bg);
+  border-color: var(--danger-border);
+  color:        var(--danger);
+}
+.quick-icon-btn--success:hover {
+  background:   var(--success-bg);
+  border-color: var(--success-border);
+  color:        var(--success);
+}
+.quick-icon-btn--empty { opacity: .5; }
+.quick-icon-btn__badge {
+  position:        absolute;
+  top:             -5px;
+  right:           -5px;
+  min-width:       17px;
+  height:          17px;
+  padding:         0 4px;
+  border-radius:   999px;
+  background:      var(--danger);
+  color:           #fff;
+  font-size:       .62rem;
+  font-weight:     700;
+  line-height:     1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  border:          2px solid var(--bg);
+}
+
 /* ── Module Cards ─────────────────────────────────────────── */
 .modules-grid {
   display:               grid;

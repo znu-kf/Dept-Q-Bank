@@ -252,28 +252,28 @@ const UI = {
       </div>`;
     }).join('');
 
-    const reviewBtn = incorrect.length > 0
-      ? `<button class="btn btn--danger review-btn" data-nav="review">
-          <svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Review Incorrect
-          <span class="badge badge--count">${incorrect.length}</span>
-        </button>` : '';
+    const reviewBtn = `<button class="quick-icon-btn quick-icon-btn--danger${incorrect.length === 0 ? ' quick-icon-btn--empty' : ''}" data-nav="review" title="Review Incorrect" aria-label="Review incorrect questions${incorrect.length > 0 ? ` (${incorrect.length})` : ''}">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          ${incorrect.length > 0 ? `<span class="quick-icon-btn__badge">${incorrect.length}</span>` : ''}
+        </button>`;
 
-    const flaggedBtn = flagged.length > 0
-      ? `<button class="btn btn--ghost review-btn" data-nav="flagged-review" style="border-color:var(--success);color:var(--success)">
-          <svg class="icon icon--sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Flagged
-          <span class="badge" style="background:var(--success);color:#fff">${flagged.length}</span>
-        </button>` : '';
+    const flaggedBtn = `<button class="quick-icon-btn quick-icon-btn--success${flagged.length === 0 ? ' quick-icon-btn--empty' : ''}" data-nav="flagged-review" title="Flagged" aria-label="Flagged questions${flagged.length > 0 ? ` (${flagged.length})` : ''}">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          ${flagged.length > 0 ? `<span class="quick-icon-btn__badge" style="background:var(--success)">${flagged.length}</span>` : ''}
+        </button>`;
 
     return `
     <div class="dashboard">
       <div class="dashboard__intro">
-        <div>
-          <h1 class="dashboard__greeting">Welcome back</h1>
-          <p class="dashboard__subgreeting">ZNU medical students, the A⁺ is waiting...</p>
-        </div>
-        <div class="dashboard__actions">
-          ${reviewBtn}
-          ${flaggedBtn}
+        <div class="dashboard__intro-left">
+          <div class="dashboard__quickactions">
+            ${reviewBtn}
+            ${flaggedBtn}
+          </div>
+          <div>
+            <h1 class="dashboard__greeting">Welcome back</h1>
+            <p class="dashboard__subgreeting">ZNU medical students, the A⁺ is waiting...</p>
+          </div>
         </div>
       </div>
       ${resumeBannerHTML}

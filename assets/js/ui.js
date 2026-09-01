@@ -102,14 +102,14 @@ const UI = {
 
   miniProgressRing(percent, color = 'var(--primary)') {
     const p = Math.min(100, Math.max(0, percent));
-    const r = 20, circ = 2 * Math.PI * r;
+    const r = 16, circ = 2 * Math.PI * r;
     const offset = circ - (p / 100) * circ;
     return `<div class="module-card__ring-wrap">
-      <svg class="module-card__ring" viewBox="0 0 48 48" width="48" height="48">
-        <circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--border)" stroke-width="4"/>
-        <circle cx="24" cy="24" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+      <svg class="module-card__ring" viewBox="0 0 40 40" width="40" height="40">
+        <circle cx="20" cy="20" r="${r}" fill="none" stroke="var(--border)" stroke-width="3.5"/>
+        <circle cx="20" cy="20" r="${r}" fill="none" stroke="${color}" stroke-width="3.5"
           stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
-          stroke-linecap="round" transform="rotate(-90 24 24)"
+          stroke-linecap="round" transform="rotate(-90 20 20)"
           style="transition:stroke-dashoffset .8s ease"/>
       </svg>
       <span class="module-card__ring-value">${p}%</span>
@@ -197,7 +197,7 @@ const UI = {
     return `<div class="resume-banner" id="resume-banner">
       <div class="resume-banner__info">
         <span class="resume-banner__icon">
-          <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 12 12 12"/></svg>
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="10,8.3 16,12 10,15.7" fill="currentColor" stroke="none"/></svg>
         </span>
         <div>
           <div class="resume-banner__title">Continue Exam</div>
@@ -207,7 +207,7 @@ const UI = {
       <div class="resume-banner__actions">
         <button class="btn btn--primary btn--sm" data-nav="resume-exam">Resume <span aria-hidden="true">→</span></button>
         <button class="icon-btn resume-banner__dismiss" id="resume-dismiss-btn" aria-label="Abandon exam">
-          <svg class="icon" viewBox="0 0 24 24" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg class="icon icon--sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     </div>`;
@@ -242,16 +242,12 @@ const UI = {
           <span class="module-card__arrow"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
         <div class="module-card__body">
-          <div class="module-card__stats-row">
-            ${this.miniProgressRing(modProgress.percent, mod.color)}
-            <div class="module-card__stats-text">
-              <div class="module-card__sets">${modProgress.setsCompleted} / ${modProgress.totalSets} Sets</div>
-              <div class="module-card__avg">${modProgress.avgScore}% Average</div>
-            </div>
+          ${this.miniProgressRing(modProgress.percent, mod.color)}
+          <div class="module-card__stats-text">
+            <div class="module-card__sets">${modProgress.setsCompleted} / ${modProgress.totalSets} Sets</div>
+            <div class="module-card__avg">${modProgress.avgScore}% Average</div>
           </div>
-          <div class="module-card__footer">
-            <span class="module-card__cta" style="color:${mod.color}">${modProgress.setsCompleted > 0 ? 'Continue' : 'Start'} <span aria-hidden="true">→</span></span>
-          </div>
+          <span class="module-card__cta" style="color:${mod.color}">${modProgress.setsCompleted > 0 ? 'Continue' : 'Start'} <span aria-hidden="true">→</span></span>
         </div>
       </div>`;
     }).join('');

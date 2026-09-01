@@ -709,6 +709,122 @@ img { max-width: 100%; display: block; }
   font-weight:     500;
 }
 
+/* ── Module Card — progress ring, stats & CTA (injected) ─────── */
+.module-card__stats-row {
+  display:     flex;
+  align-items: center;
+  gap:         14px;
+}
+.module-card__ring-wrap {
+  position:    relative;
+  width:       48px;
+  height:      48px;
+  flex-shrink: 0;
+  display:     flex;
+  align-items: center;
+  justify-content: center;
+}
+.module-card__ring-value {
+  position:    absolute;
+  font-size:   .68rem;
+  font-weight: 700;
+  color:       var(--text-2);
+  letter-spacing: -.01em;
+}
+.module-card__stats-text { min-width: 0; }
+.module-card__sets {
+  font-size:   .84rem;
+  font-weight: 700;
+  color:       var(--text);
+  letter-spacing: -.01em;
+}
+.module-card__avg {
+  font-size:   .74rem;
+  color:       var(--text-3);
+  font-weight: 500;
+  margin-top:  2px;
+}
+.module-card__footer {
+  display:         flex;
+  justify-content: flex-end;
+  margin-top:      14px;
+}
+.module-card__cta {
+  font-size:      .8rem;
+  font-weight:    700;
+  letter-spacing: -.01em;
+  display:        inline-flex;
+  align-items:    center;
+  gap:            3px;
+  transition:     gap var(--dur);
+}
+.module-card:hover .module-card__cta { gap: 6px; }
+
+/* ── Resume Banner (injected) ─────────────────────────────────── */
+.resume-banner {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             16px;
+  background:      var(--surface);
+  backdrop-filter: var(--glass-blur);
+  border:          1px solid var(--border);
+  border-left:     3px solid var(--primary);
+  border-radius:   var(--radius-lg);
+  padding:         14px 18px;
+  margin-bottom:   20px;
+  box-shadow:      var(--shadow-sm);
+  flex-wrap:       wrap;
+}
+.resume-banner__info {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  min-width:   0;
+}
+.resume-banner__icon {
+  width:           38px;
+  height:          38px;
+  border-radius:   var(--radius);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--primary-50);
+  color:           var(--primary);
+  flex-shrink:     0;
+}
+.resume-banner__title {
+  font-size:   .88rem;
+  font-weight: 700;
+  color:       var(--text);
+  letter-spacing: -.01em;
+}
+.resume-banner__subtitle {
+  font-size:   .76rem;
+  color:       var(--text-3);
+  font-weight: 500;
+  margin-top:  2px;
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+}
+.resume-banner__actions {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-shrink: 0;
+}
+
+/* ── Confetti canvas (injected) ───────────────────────────────── */
+.confetti-canvas {
+  position:       fixed;
+  inset:          0;
+  width:          100vw;
+  height:         100vh;
+  pointer-events: none;
+  z-index:        9999;
+}
+
 /* ── Page Header ──────────────────────────────────────────── */
 .page { max-width: 860px; margin: 0 auto; }
 

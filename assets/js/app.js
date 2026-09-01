@@ -92,8 +92,11 @@ const App = {
         const progress = Storage.getProgress();
         const stats    = Storage.getStats();
         UI.loading('Loading…');
-        const countMap = await this._buildCountMap(this.config);
-        UI.setContent(UI.renderDashboard(this.config, progress, stats, countMap));
+        const countMap  = await this._buildCountMap(this.config);
+        const savedExam = Storage.loadCurrentExam();
+        const resumeBannerHTML = (savedExam && !savedExam.state?.submitted)
+          ? UI.renderResumeBanner(savedExam, this.config) : '';
+        UI.setContent(UI.renderDashboard(this.config, progress, stats, countMap, resumeBannerHTML));
         this._applyThemeIcon(document.documentElement.getAttribute('data-theme') || 'light');
         break;
       }
@@ -164,6 +167,15 @@ const App = {
           }
           break;
         }
+        UI.setContent(UI.renderExam(ExamEngine, this.config));
+        this._bindExamEvents();
+        break;
+      }
+
+      case 'resume-exam': {
+        UI.loading('Resuming exam…');
+        const resumed = await ExamEngine.resume();
+        if (!resumed) { this.navigate('dashboard'); break; }
         UI.setContent(UI.renderExam(ExamEngine, this.config));
         this._bindExamEvents();
         break;
@@ -258,6 +270,16 @@ const App = {
       this.navigate('dashboard');
       return;
     }
+    // Resume banner — dismiss (abandons the in-progress exam)
+    if (e.target.closest('#resume-dismiss-btn')) {
+      if (confirm('Abandon this exam? Your progress on this attempt will be lost.')) {
+        Storage.clearCurrentExam();
+        UI.toast('Exam abandoned.', 'success');
+        this.navigate('dashboard');
+      }
+      return;
+    }
+
     const el = e.target.closest('[data-nav]');
     if (!el) return;
     e.preventDefault();
@@ -453,6 +475,9 @@ const App = {
     if (this._cleanupExamListeners) this._cleanupExamListeners();
     this.lastResults = ExamEngine.submit();
     this.navigate('results');
+    if (this.lastResults && this.lastResults.score === 100) {
+      UI.launchConfetti();
+    }
   },
 
   // ─── Results events ───────────────────────────────────────────────────────

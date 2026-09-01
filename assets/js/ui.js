@@ -74,6 +74,14 @@ const UI = {
     </div>`;
   },
 
+  formatStudyTime(totalSeconds) {
+    const totalMinutes = Math.round((totalSeconds || 0) / 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  },
+
   scoreRing(percent) {
     const r = 52, circ = 2 * Math.PI * r;
     const offset = circ - (percent / 100) * circ;
@@ -92,22 +100,131 @@ const UI = {
     </div>`;
   },
 
+  miniProgressRing(percent, color = 'var(--primary)') {
+    const p = Math.min(100, Math.max(0, percent));
+    const r = 20, circ = 2 * Math.PI * r;
+    const offset = circ - (p / 100) * circ;
+    return `<div class="module-card__ring-wrap">
+      <svg class="module-card__ring" viewBox="0 0 48 48" width="48" height="48">
+        <circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--border)" stroke-width="4"/>
+        <circle cx="24" cy="24" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+          stroke-linecap="round" transform="rotate(-90 24 24)"
+          style="transition:stroke-dashoffset .8s ease"/>
+      </svg>
+      <span class="module-card__ring-value">${p}%</span>
+    </div>`;
+  },
+
+  // ─── Confetti (lightweight canvas celebration) ─────────────────────────────
+
+  launchConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    const colors = ['#1B3A6B', '#2a5298', '#0f9b82', '#d97706', '#4A9E8E'];
+    const pieces = Array.from({ length: 140 }, () => ({
+      x:        Math.random() * canvas.width,
+      y:        -20 - Math.random() * canvas.height * 0.4,
+      w:        5 + Math.random() * 5,
+      h:        8 + Math.random() * 6,
+      color:    colors[Math.floor(Math.random() * colors.length)],
+      speed:    2 + Math.random() * 3,
+      drift:    (Math.random() - 0.5) * 2.2,
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 10,
+    }));
+
+    const onResize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', onResize);
+
+    let frame = 0;
+    const maxFrames = 210;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.y        += p.speed;
+        p.x        += p.drift;
+        p.rotation += p.rotSpeed;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      frame++;
+      if (frame < maxFrames) {
+        requestAnimationFrame(draw);
+      } else {
+        window.removeEventListener('resize', onResize);
+        canvas.remove();
+      }
+    };
+    draw();
+  },
+
+  // ─── Resume banner ──────────────────────────────────────────────────────────
+
+  renderResumeBanner(saved, config) {
+    if (!saved || saved.state?.submitted) return '';
+    const mod = config.modules.find(m => m.id === saved.config.module);
+    const et  = config.examTypes.find(e => e.id === saved.config.examType);
+
+    let setLabel;
+    if (saved.config.scope === 'subject') {
+      const sub = config.subjects.find(s => s.id === saved.config.subject);
+      setLabel = `${sub?.label || saved.config.subject} — Full Exam`;
+    } else if (saved.config.scope === 'examtype') {
+      setLabel = `${et?.label || saved.config.examType} — Full Exam`;
+    } else {
+      const subSubs = (mod?.subSubjects && mod.subSubjects[saved.config.examType] && mod.subSubjects[saved.config.examType][saved.config.subject]) || [];
+      const ss = subSubs.find(s => s.id === saved.config.subSubject);
+      setLabel = ss?.label || saved.config.subSubject || 'Exam';
+    }
+
+    const currentQ = (saved.state?.currentIndex ?? 0) + 1;
+    const totalQ   = (saved.questions || []).length;
+
+    return `<div class="resume-banner" id="resume-banner">
+      <div class="resume-banner__info">
+        <span class="resume-banner__icon">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M3 12a9 9 0 109-9"/><polyline points="3 3 3 12 12 12"/></svg>
+        </span>
+        <div>
+          <div class="resume-banner__title">Continue Exam</div>
+          <div class="resume-banner__subtitle">${mod?.title || saved.config.module} · ${setLabel} — Question ${currentQ} / ${totalQ}</div>
+        </div>
+      </div>
+      <div class="resume-banner__actions">
+        <button class="btn btn--primary btn--sm" data-nav="resume-exam">Resume <span aria-hidden="true">→</span></button>
+        <button class="icon-btn resume-banner__dismiss" id="resume-dismiss-btn" aria-label="Abandon exam">
+          <svg class="icon" viewBox="0 0 24 24" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>`;
+  },
+
   // ─── Dashboard ────────────────────────────────────────────────────────────
 
-  renderDashboard(config, progressMap, stats, countMap = null) {
+  renderDashboard(config, progressMap, stats, countMap = null, resumeBannerHTML = '') {
     const accuracy  = stats.totalAttempted > 0
       ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100) : 0;
     const incorrect = Storage.getIncorrect();
     const flagged   = Storage.getFlagged();
 
     const statsHTML = [
-      { label: 'Attempted',  value: stats.totalAttempted },
-      { label: 'Correct',    value: stats.totalCorrect },
-      { label: 'Incorrect',  value: stats.totalIncorrect },
-      { label: 'Accuracy',   value: `${accuracy}%` },
-      { label: 'Exams',      value: stats.completedExams },
-      { label: 'Flagged',    value: flagged.length },
-      { label: 'For Review', value: incorrect.length },
+      { label: 'Questions Solved', value: stats.totalAttempted },
+      { label: 'Accuracy',         value: `${accuracy}%` },
+      { label: 'Study Time',       value: this.formatStudyTime(stats.totalTimeSpentSec) },
     ].map(s => `<div class="stat-pill"><div class="stat-pill__value">${s.value}</div><div class="stat-pill__label">${s.label}</div></div>`).join('');
 
     const modulesHTML = config.modules.filter(mod => {
@@ -125,11 +242,16 @@ const UI = {
           <span class="module-card__arrow"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
         <div class="module-card__body">
-          <div class="module-card__info">
-            <span>${modProgress.setsCompleted}/${modProgress.totalSets} sets completed</span>
-            <span>${modProgress.percent}%</span>
+          <div class="module-card__stats-row">
+            ${this.miniProgressRing(modProgress.percent, mod.color)}
+            <div class="module-card__stats-text">
+              <div class="module-card__sets">${modProgress.setsCompleted} / ${modProgress.totalSets} Sets</div>
+              <div class="module-card__avg">${modProgress.avgScore}% Average</div>
+            </div>
           </div>
-          ${this.progressBar(modProgress.percent, mod.color)}
+          <div class="module-card__footer">
+            <span class="module-card__cta" style="color:${mod.color}">${modProgress.setsCompleted > 0 ? 'Continue' : 'Start'} <span aria-hidden="true">→</span></span>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -158,6 +280,7 @@ const UI = {
           ${flaggedBtn}
         </div>
       </div>
+      ${resumeBannerHTML}
       <div class="stats-strip" style="margin-bottom:28px">${statsHTML}</div>
       <section class="section">
         <h2 class="section__title">Modules</h2>
@@ -879,15 +1002,24 @@ const UI = {
 
   _calcModuleProgress(mod, config, progressMap) {
     const subSubjects = mod.subSubjects || {};
-    let completed  = 0;
-    let total      = 0;
+    let completed   = 0;
+    let total       = 0;
+    let scoreSum    = 0;
+    let scoredCount = 0;
     config.examTypes.forEach(et => {
       config.subjects.forEach(sub => {
         const list = (subSubjects[et.id] && subSubjects[et.id][sub.id]) || [];
         total += list.length;
         list.forEach(ss => {
           const key = `${mod.id}|${et.id}|${sub.id}|${ss.id}`;
-          if (progressMap[key]?.completed) completed++;
+          const entry = progressMap[key];
+          if (entry?.completed) {
+            completed++;
+            if (typeof entry.score === 'number') {
+              scoreSum += entry.score;
+              scoredCount++;
+            }
+          }
         });
       });
     });
@@ -895,6 +1027,7 @@ const UI = {
       setsCompleted: completed,
       totalSets:     total,
       percent:       total > 0 ? Math.round((completed / total) * 100) : 0,
+      avgScore:      scoredCount > 0 ? Math.round(scoreSum / scoredCount) : 0,
     };
   },
 };

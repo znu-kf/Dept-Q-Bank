@@ -139,17 +139,27 @@ const UI = {
     </div>`;
   },
 
-  // Subject page — grid of sub-subject topic cards
+  // Subject page — topic-panel CTA + row-based topics list
   skeletonSubject() {
-    const card = `<div class="subsubject-card" style="cursor:default">
-        ${this._skel('38px', '38px', 'var(--radius)')}
-        ${this._skel('70%', '11px', '4px')}
-        ${this._skel('40%', '9px', '4px')}
+    const row = `<div class="topic-row" style="cursor:default">
+        <div class="topic-row__left">
+          ${this._skel('36px', '36px', 'var(--radius-sm)')}
+          <div>
+            ${this._skel('110px', '13px', '4px')}
+            <div style="margin-top:6px">${this._skel('70px', '10px', '4px')}</div>
+          </div>
+        </div>
+        ${this._skel('16px', '16px', '3px')}
       </div>`;
 
     return `<div class="page skeleton-page">
       ${this.skeletonPageHeader()}
-      <div class="subsubjects-grid">${card}${card}${card}${card}${card}${card}</div>
+      <div class="topic-panel" style="margin-bottom:20px">
+        ${this._skel('75%', '11px', '4px')}
+        <div style="margin-top:14px">${this._skel('240px', '44px', 'var(--radius)')}</div>
+      </div>
+      <div style="margin-bottom:12px">${this._skel('60px', '10px', '4px')}</div>
+      <div class="topics-list">${row}${row}${row}${row}${row}</div>
     </div>`;
   },
 
@@ -206,19 +216,24 @@ const UI = {
     </div>`;
   },
 
-  // Wide exam start page — info-card grid + exam-options-card (legacy layout)
+  // Wide exam start page — stat-pill row + topic panel + breakdown card
   skeletonWideExamStart() {
-    const infoCard = `<div class="info-card">
-        <div style="display:flex;justify-content:center;margin-bottom:6px">${this._skel('60%', '9px', '4px')}</div>
-        <div style="display:flex;justify-content:center">${this._skel('40%', '20px', '5px')}</div>
+    const pill = `<div class="stat-pill">
+        ${this._skel('50%', '18px', '5px')}
+        <div style="margin-top:8px">${this._skel('80%', '9px', '4px')}</div>
       </div>`;
 
     return `<div class="page skeleton-page">
       ${this.skeletonPageHeader()}
-      <div class="subject-info-cards">${infoCard}${infoCard}${infoCard}</div>
-      <div class="exam-options-card">
-        <div class="exam-actions">
-          ${this._skel('180px', '44px', 'var(--radius)')}
+      <div class="stats-strip" style="margin-bottom:18px">${pill}${pill}${pill}</div>
+      <div class="topic-panel" style="margin-bottom:18px">
+        ${this._skel('85%', '11px', '4px')}
+        <div style="margin-top:14px">${this._skel('220px', '44px', 'var(--radius)')}</div>
+      </div>
+      <div class="wide-exam-breakdown">
+        <div style="margin-bottom:12px">${this._skel('100px', '10px', '4px')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${this._skel('90px', '26px', 'var(--radius-sm)')}${this._skel('110px', '26px', 'var(--radius-sm)')}${this._skel('80px', '26px', 'var(--radius-sm)')}${this._skel('100px', '26px', 'var(--radius-sm)')}
         </div>
       </div>
     </div>`;
@@ -549,35 +564,45 @@ const UI = {
       ? visibleSubSubs.reduce((acc, ss) => acc + (countMap[`${mod.id}|${examType}|${subjectId}|${ss.id}`] || 0), 0)
       : 0;
 
-    const subjectExamBtn = totalSubjectQ > 0
-      ? `<button class="btn btn--primary wide-exam-btn" id="start-subject-exam-btn">
-          Start Full ${sub.label} Exam <span class="badge badge--count">${totalSubjectQ} Q</span>
-        </button>`
+    const subjectExamPanel = totalSubjectQ > 0
+      ? `<div class="topic-panel" style="margin-bottom:20px">
+          <p class="wide-exam-note">Practice every topic in ${sub.label} as one shuffled exam.</p>
+          <div class="topic-panel__primary">
+            <button class="btn btn--primary btn--lg" id="start-subject-exam-btn">
+              Start Full ${sub.label} Exam <span class="badge badge--count">${totalSubjectQ} Q</span>
+            </button>
+          </div>
+        </div>`
       : '';
+
+    const topicRows = visibleSubSubs.map(ss => {
+      const prog = progressMap[`${mod.id}|${examType}|${subjectId}|${ss.id}`] || {};
+      const pct  = prog.total ? Math.round((prog.correct / prog.total) * 100) : 0;
+      const pctColor = pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+      const qCount = countMap ? (countMap[`${mod.id}|${examType}|${subjectId}|${ss.id}`] || 0) : 0;
+
+      return `<div class="topic-row" data-nav="subsubject"
+        data-params='${JSON.stringify({ moduleId: mod.id, examType, subject: subjectId, subSubject: ss.id })}'
+        tabindex="0" role="button">
+        <div class="topic-row__left">
+          <span class="topic-row__icon" style="background:${sub.color}20;color:${sub.color}">${ss.icon}</span>
+          <div>
+            <div class="topic-row__name">${ss.label}</div>
+            <div class="topic-row__meta">${qCount} Question${qCount === 1 ? '' : 's'}${prog.completed ? '' : ' · Not attempted'}</div>
+          </div>
+        </div>
+        <div class="topic-row__right">
+          ${prog.completed ? `<span class="topic-row__score" style="color:${pctColor}">${pct}%</span>` : ''}
+          <span class="topic-row__arrow"><svg class="icon icon--sm" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+      </div>`;
+    }).join('');
 
     const content = visibleSubSubs.length === 0
       ? this.emptyState('No Topics Yet', `No questions added yet for ${sub.label} in ${mod.title}.`, sub.icon)
-      : `${subjectExamBtn ? `<div class="wide-exam-cta">${subjectExamBtn}</div>` : ''}
-         <div class="subsubjects-grid">
-          ${visibleSubSubs.map(ss => {
-            const prog = progressMap[`${mod.id}|${examType}|${subjectId}|${ss.id}`] || {};
-            const pct  = prog.total ? Math.round((prog.correct / prog.total) * 100) : 0;
-            const qCount = countMap ? (countMap[`${mod.id}|${examType}|${subjectId}|${ss.id}`] || 0) : '';
-            return `<div class="subsubject-card" data-nav="subsubject"
-              data-params='${JSON.stringify({ moduleId: mod.id, examType, subject: subjectId, subSubject: ss.id })}'
-              tabindex="0" role="button">
-              <div class="subsubject-card__icon">${ss.icon}</div>
-              <div class="subsubject-card__name">${ss.label}</div>
-              ${qCount ? `<div class="subsubject-card__qcount">${qCount} Q</div>` : ''}
-              ${prog.completed
-                ? `<div class="subsubject-card__score" style="color:${pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)'}">${pct}%</div>
-                   <span class="badge badge--success" style="font-size:.7rem">Done</span>`
-                : `<div class="subsubject-card__score" style="color:var(--text-4)">Not attempted</div>`
-              }
-              <span class="subsubject-card__arrow">›</span>
-            </div>`;
-          }).join('')}
-        </div>`;
+      : `${subjectExamPanel}
+        <div style="margin-bottom:12px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-4)">Topics</div>
+        <div class="topics-list">${topicRows}</div>`;
 
     return `
     <div class="page subject-page">
@@ -699,6 +724,12 @@ const UI = {
 
     const noQ = totalCount === 0;
 
+    const statPills = [
+      { label: 'Total Questions', value: totalCount },
+      { label: 'Question Order',  value: 'Randomized' },
+      { label: 'Feedback',        value: 'Immediate' },
+    ].map(s => `<div class="stat-pill"><div class="stat-pill__value">${s.value}</div><div class="stat-pill__label">${s.label}</div></div>`).join('');
+
     // Build topic breakdown
     let breakdownHTML = '';
     if (isSubjectScope) {
@@ -742,33 +773,20 @@ const UI = {
 
       ${noQ
         ? this.emptyState('No Questions Available', 'No questions have been added to this section yet.', icon)
-        : `<div class="subject-info-cards">
-            <div class="info-card">
-              <div class="info-card__label">Total Questions</div>
-              <div class="info-card__value">${totalCount}</div>
-            </div>
-            <div class="info-card">
-              <div class="info-card__label">Question Order</div>
-              <div class="info-card__value info-card__value--sm">Randomized</div>
-            </div>
-            <div class="info-card">
-              <div class="info-card__label">Feedback</div>
-              <div class="info-card__value info-card__value--sm">Immediate</div>
+        : `<div class="stats-strip" style="margin-bottom:18px">${statPills}</div>
+
+          <div class="topic-panel" style="margin-bottom:18px">
+            <p class="wide-exam-note">Questions from all topics are shuffled together into one randomized exam.</p>
+            <div class="topic-panel__primary">
+              <button class="btn btn--primary btn--lg" id="start-wide-exam-btn">
+                Start Exam (${totalCount} Q) <svg class="icon icon--sm" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
             </div>
           </div>
 
           <div class="wide-exam-breakdown">
             <h3 class="wide-exam-breakdown__title">Covered Topics</h3>
             <div class="wide-breakdown-grid">${breakdownHTML}</div>
-          </div>
-
-          <div class="exam-options-card">
-            <p class="wide-exam-note">Questions from all topics are shuffled together into one randomized exam.</p>
-            <div class="exam-actions">
-              <button class="btn btn--primary btn--lg" id="start-wide-exam-btn"><svg class="icon icon--sm" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> 
-                Start Exam (${totalCount} Q) <svg class="icon icon--sm" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </button>
-            </div>
           </div>`
       }
     </div>`;
@@ -956,16 +974,23 @@ const UI = {
     }
 
     const reviewHTML = results.perQuestion.map((pq, i) => {
-      const cls    = pq.correct ? 'result-item--correct' : pq.answered ? 'result-item--wrong' : 'result-item--skipped';
-      const status = pq.correct ? '✅' : pq.answered ? '❌' : '—';
+      const cls = pq.correct ? 'result-item--correct' : pq.answered ? 'result-item--wrong' : 'result-item--skipped';
+      const statusIcon = pq.correct
+        ? `<svg class="icon icon--sm" viewBox="0 0 24 24" style="color:var(--success)"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></svg>`
+        : pq.answered
+          ? `<svg class="icon icon--sm" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>`
+          : `<svg class="icon icon--sm" viewBox="0 0 24 24" style="color:var(--text-4)"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`;
+      const flagIcon = pq.flagged
+        ? `<svg class="icon icon--sm" viewBox="0 0 24 24" style="color:var(--warning)"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>` : '';
       // For wide exams show topic badge
       const topicTag = (isWide && pq._subSubjectLabel)
         ? `<span class="result-item__topic">${pq._subSubjectLabel}</span>` : '';
       return `<div class="result-item ${cls}">
         <div class="result-item__header">
-          <span class="result-item__num">${status} Q${i + 1}</span>
+          ${statusIcon}
+          <span class="result-item__num">Q${i + 1}</span>
           ${topicTag}
-          ${pq.flagged ? '<span class="result-item__flag">🚩</span>' : ''}
+          ${flagIcon}
         </div>
         <p class="result-item__question">${pq.question}</p>
         <div class="result-item__answers">
@@ -976,6 +1001,13 @@ const UI = {
       </div>`;
     }).join('');
 
+    const summaryPills = [
+      { label: 'Correct',   value: results.correct,   color: 'var(--success)' },
+      { label: 'Incorrect', value: results.incorrect, color: 'var(--danger)' },
+      { label: 'Skipped',   value: results.unanswered, color: 'var(--text-4)' },
+      { label: 'Time',      value: ExamEngine.formatTime(results.timeSec) },
+    ].map(s => `<div class="stat-pill"><div class="stat-pill__value"${s.color ? ` style="color:${s.color}"` : ''}>${s.value}</div><div class="stat-pill__label">${s.label}</div></div>`).join('');
+
     return `
     <div class="page results-page">
       ${this.backBtn(backNav, backParams)}
@@ -985,16 +1017,11 @@ const UI = {
         <div class="results-summary__stats">
           <h2 class="results-summary__title">Exam Complete</h2>
           <p class="results-summary__subtitle">${titleLabel} · ${subtitleLabel}</p>
-          <div class="results-summary__grid">
-            ${this.statCard('Correct',   results.correct,    '✅', 'var(--success)')}
-            ${this.statCard('Incorrect', results.incorrect,  '❌', 'var(--danger)')}
-            ${this.statCard('Skipped',   results.unanswered, '—',  '#6b7280')}
-            ${this.statCard('Time',      ExamEngine.formatTime(results.timeSec), '⏱', 'var(--info)')}
-          </div>
+          <div class="stats-strip results-summary__pills">${summaryPills}</div>
         </div>
       </div>
       <div class="results-actions">
-        <button class="btn btn--ghost" id="retry-all-btn"
+        <button class="btn btn--primary" id="retry-all-btn"
           data-module="${results.config.module}"
           data-exam-type="${results.config.examType}"
           data-subject="${results.config.subject || ''}"

@@ -376,7 +376,7 @@ const UI = {
         <span class="resume-banner__icon">
           <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="10,8.3 16,12 10,15.7" fill="currentColor" stroke="none"/></svg>
         </span>
-        <div>
+        <div class="resume-banner__text">
           <div class="resume-banner__title">Continue Exam</div>
           <div class="resume-banner__subtitle">${mod?.title || saved.config.module} · ${setLabel} — Question ${currentQ} / ${totalQ}</div>
         </div>
@@ -586,7 +586,7 @@ const UI = {
         tabindex="0" role="button">
         <div class="topic-row__left">
           <span class="topic-row__icon" style="background:${sub.color}20;color:${sub.color}">${ss.icon}</span>
-          <div>
+          <div class="topic-row__text">
             <div class="topic-row__name">${ss.label}</div>
             <div class="topic-row__meta">${qCount} Question${qCount === 1 ? '' : 's'}${prog.completed ? '' : ' · Not attempted'}</div>
           </div>

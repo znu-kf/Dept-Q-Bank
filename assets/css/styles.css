@@ -83,6 +83,11 @@
   /* Skeleton loaders */
   --skeleton-base:  #e1e7f0;
   --skeleton-shine: #f3f6fa;
+
+  /* Accent text/icon color on surface backgrounds (kept separate from
+     --primary so it can be brightened in dark mode without touching
+     button/toggle/focus-ring backgrounds that already read fine). */
+  --accent-text:    var(--primary);
 }
 
 /* ── Dark mode tokens ─────────────────────────────────────── */
@@ -114,6 +119,7 @@
   --shadow-lg:      0 12px 40px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.25);
   --skeleton-base:  #1c2635;
   --skeleton-shine: #263248;
+  --accent-text:    #5b9bf5;
 }
 
 /* ── Reset & Base ─────────────────────────────────────────── */
@@ -584,6 +590,9 @@ img { max-width: 100%; display: block; }
   color:       var(--text);
   letter-spacing: -.02em;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
 }
 .stat-pill__label {
   font-size:  .68rem;
@@ -848,7 +857,7 @@ img { max-width: 100%; display: block; }
   font-size:      .8rem;
   font-weight:    700;
   letter-spacing: -.01em;
-  color:          var(--primary);
+  color:          var(--accent-text);
   display:        inline-flex;
   align-items:    center;
   gap:            3px;
@@ -886,8 +895,12 @@ img { max-width: 100%; display: block; }
   align-items:     center;
   justify-content: center;
   background:      var(--primary-50);
-  color:           var(--primary);
+  color:           var(--accent-text);
   flex-shrink:     0;
+}
+.resume-banner__text {
+  min-width: 0;
+  flex:      1;
 }
 .resume-banner__title {
   font-size:   .88rem;
@@ -1084,8 +1097,24 @@ img { max-width: 100%; display: block; }
   justify-content: center;
   flex-shrink:     0;
 }
-.topic-row__name { font-weight: 600; font-size: .9rem; letter-spacing: -.01em; }
-.topic-row__meta { font-size: .75rem; color: var(--text-3); font-weight: 500; margin-top: 1px; }
+.topic-row__text { min-width: 0; }
+.topic-row__name {
+  font-weight:    600;
+  font-size:      .9rem;
+  letter-spacing: -.01em;
+  white-space:    nowrap;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+}
+.topic-row__meta {
+  font-size:   .75rem;
+  color:       var(--text-3);
+  font-weight: 500;
+  margin-top:  1px;
+  white-space: nowrap;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+}
 .topic-row__right {
   display:     flex;
   align-items: center;

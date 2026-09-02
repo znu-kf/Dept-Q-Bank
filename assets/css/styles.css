@@ -1046,6 +1046,56 @@ img { max-width: 100%; display: block; }
   gap:     10px;
 }
 
+/* ── Topics List (subject page — mirrors .subjects-list row pattern) ─── */
+.topics-list {
+  border:        1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow:      hidden;
+  background:    var(--surface);
+  backdrop-filter: var(--glass-blur);
+}
+.topic-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         13px 18px;
+  border-bottom:   1px solid var(--border);
+  cursor:          pointer;
+  transition:      background var(--dur);
+  outline:         none;
+  gap:             12px;
+}
+.topic-row:last-child     { border-bottom: none; }
+.topic-row:hover          { background: var(--surface-2); }
+.topic-row:focus-visible  { background: var(--primary-50); }
+.topic-row__left {
+  display:     flex;
+  align-items: center;
+  gap:         11px;
+  flex:        1;
+  min-width:   0;
+}
+.topic-row__icon {
+  width:           36px;
+  height:          36px;
+  border-radius:   var(--radius-sm);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  flex-shrink:     0;
+}
+.topic-row__name { font-weight: 600; font-size: .9rem; letter-spacing: -.01em; }
+.topic-row__meta { font-size: .75rem; color: var(--text-3); font-weight: 500; margin-top: 1px; }
+.topic-row__right {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  flex-shrink: 0;
+}
+.topic-row__score { font-size: .82rem; font-weight: 700; }
+.topic-row__arrow { color: var(--text-4); display: flex; transition: transform var(--dur); }
+.topic-row:hover .topic-row__arrow { transform: translateX(2px); }
+
 .subsubject-card {
   background:      var(--surface);
   backdrop-filter: var(--glass-blur);
@@ -1493,6 +1543,7 @@ img { max-width: 100%; display: block; }
   border-radius: 4px;
   padding:     1px 6px;
 }
+.results-summary__pills { margin-bottom: 0; }
 .result-item__question { line-height: 1.6; color: var(--text); margin-bottom: 8px; font-weight: 500; }
 
 .result-item__answers { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
@@ -1718,7 +1769,7 @@ img { max-width: 100%; display: block; }
 }
 @media (max-width: 640px) {
   #app { padding: 16px 14px 56px; }
-  .dashboard__intro { flex-wrap: wrap; align-items: flex-start; }
+  .dashboard__intro { flex-wrap: wrap; }
   .site-header__tagline { display: none; }
   .modules-grid { grid-template-columns: 1fr; }
   .exam-options-card { padding: 14px 16px; }

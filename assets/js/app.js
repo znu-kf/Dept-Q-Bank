@@ -30,6 +30,16 @@ const App = {
     this._initTheme();
     document.addEventListener('click', e => this._handleGlobalClick(e));
 
+    document.addEventListener('visibilitychange', () => {
+      const onExamScreen = this.currentPage === 'exam' || this.currentPage === 'resume-exam';
+      if (!onExamScreen) return;
+      if (document.hidden) {
+        ExamEngine.pause();
+      } else {
+        ExamEngine.resumeSegment();
+      }
+    });
+
     window.addEventListener('popstate', e => {
       if (e.state && e.state.page) {
         this._navigateWithoutHistory(e.state.page, e.state.params || {});
@@ -70,7 +80,16 @@ const App = {
 
   // ─── Navigation ──────────────────────────────────────────────────────────
 
+  // If we're leaving the exam screen while an exam is in progress, fold the
+  // active segment into elapsedMs so time away isn't counted as exam time.
+  _pauseExamIfLeaving(nextPage) {
+    const leavingExam = (this.currentPage === 'exam' || this.currentPage === 'resume-exam')
+      && nextPage !== 'exam' && nextPage !== 'resume-exam';
+    if (leavingExam) ExamEngine.pause();
+  },
+
   navigate(page, params = {}) {
+    this._pauseExamIfLeaving(page);
     this.currentPage   = page;
     this.currentParams = params;
     Storage.saveLastPage({ page, params });
@@ -79,6 +98,7 @@ const App = {
   },
 
   _navigateWithoutHistory(page, params = {}) {
+    this._pauseExamIfLeaving(page);
     this.currentPage   = page;
     this.currentParams = params;
     Storage.saveLastPage({ page, params });

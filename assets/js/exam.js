@@ -14,6 +14,8 @@ const ExamEngine = {
     flagged: new Set(),
     startTime: null,
     endTime: null,
+    elapsedMs: 0,
+    paused: false,
     submitted: false,
   },
 
@@ -36,6 +38,8 @@ const ExamEngine = {
       flagged: new Set(),
       startTime: Date.now(),
       endTime: null,
+      elapsedMs: 0,
+      paused: false,
       submitted: false,
     };
     Storage.clearCurrentExam();
@@ -48,7 +52,32 @@ const ExamEngine = {
     this.config    = saved.config;
     this.questions = saved.questions;
     this.state     = { ...saved.state, flagged: new Set(saved.state.flagged) };
+    // Any time already spent is preserved in elapsedMs; start a fresh active
+    // segment now that the exam is actually back on screen.
+    this.state.startTime = Date.now();
+    this.state.paused    = false;
+    this.save();
     return true;
+  },
+
+  // Called when the exam leaves the screen while still in progress (navigating
+  // away, backgrounding the tab, etc.) — folds the current active segment into
+  // elapsedMs and stops the clock so time away doesn't count as exam time.
+  pause() {
+    if (!this.config || this.state.submitted || this.state.paused) return;
+    this.state.elapsedMs = (this.state.elapsedMs || 0) + (Date.now() - this.state.startTime);
+    this.state.paused    = true;
+    this.save();
+  },
+
+  // Called when an already-loaded exam comes back on screen (e.g. tab
+  // refocused) without a full reload from storage — just restarts the active
+  // segment.
+  resumeSegment() {
+    if (!this.config || this.state.submitted || !this.state.paused) return;
+    this.state.startTime = Date.now();
+    this.state.paused    = false;
+    this.save();
   },
 
   save() {
@@ -109,6 +138,9 @@ const ExamEngine = {
     this.state.submitted = true;
     this.state.endTime   = Date.now();
 
+    const activeMs = this.state.paused ? 0 : (this.state.endTime - this.state.startTime);
+    const totalMs  = (this.state.elapsedMs || 0) + activeMs;
+
     const results = {
       config:      this.config,
       questions:   this.questions,
@@ -118,7 +150,7 @@ const ExamEngine = {
       correct:     0,
       incorrect:   0,
       unanswered:  0,
-      timeSec:     Math.round((this.state.endTime - this.state.startTime) / 1000),
+      timeSec:     Math.round(totalMs / 1000),
       completedAt: this.state.endTime,
       perQuestion: [],
     };

@@ -148,8 +148,10 @@ body::before {
   opacity:    .4;
 }
 
-a { color: var(--primary); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a { color: var(--primary); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) {
+  a:hover { text-decoration: underline; }
+}
 
 code {
   font-family:  var(--font-mono);
@@ -195,11 +197,18 @@ img { max-width: 100%; display: block; }
   gap:             16px;
 }
 .site-header__brand {
-  display:     flex;
-  align-items: center;
-  gap:         11px;
-  cursor:      pointer;
-  min-width:   0;
+  display:                     flex;
+  align-items:                 center;
+  gap:                         11px;
+  cursor:                      pointer;
+  min-width:                   0;
+  text-decoration:             none;
+  -webkit-tap-highlight-color: transparent;
+}
+.site-header__brand:hover,
+.site-header__brand:active,
+.site-header__brand:focus {
+  text-decoration: none;
 }
 .site-header__mark {
   width:         36px;

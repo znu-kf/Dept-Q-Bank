@@ -204,11 +204,22 @@ img { max-width: 100%; display: block; }
   min-width:                   0;
   text-decoration:             none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select:         none;
+  user-select:                 none;
+  outline:                     none;
+}
+.site-header__brand,
+.site-header__brand * {
+  -webkit-tap-highlight-color: transparent;
 }
 .site-header__brand:hover,
 .site-header__brand:active,
-.site-header__brand:focus {
+.site-header__brand:focus,
+.site-header__brand:focus-visible {
   text-decoration: none;
+  outline:          none;
+  background:       transparent;
+  box-shadow:        none;
 }
 .site-header__mark {
   width:         36px;
